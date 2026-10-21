@@ -1,0 +1,103 @@
+@using System.Globalization
+<!DOCTYPE html>
+@{
+    var isArabic = CultureInfo.CurrentCulture.Name.StartsWith("ar");
+    var dir = isArabic ? "rtl" : "ltr";
+}
+<html lang="@(isArabic ? "ar" : "en")" dir="@dir">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    @* (موديل 6 — FE-01/SEC-13): كانت الروابط الثلاثة أدناه تُحمَّل من CDN خارجية (cdn.tailwindcss.com،
+       cdnjs.cloudflare.com، fonts.googleapis.com) — الآن الثلاثة مبنية/مُستضافة محليًا بالكامل:
+       - Tailwind: مبني فعليًا عبر Tailwind CLI (npm run build:css) بدل تحميل المحرك كاملًا وقت التشغيل
+         عبر cdn.tailwindcss.com (غير مخصص للإنتاج أصلاً حسب توثيق Tailwind نفسه، وكان يُصدر تحذيرًا
+         بـ Console كل صفحة). الملف الناتج ~50KB فقط يحتوي الأصناف المستخدمة فعليًا بدل حزمة كاملة.
+       - FontAwesome وCairo: مُستضافين محليًا عبر حزم npm الرسمية (@@fortawesome/fontawesome-free,
+         @@fontsource/cairo) بدل الاعتماد على توفر CDN خارجي في كل تحميل صفحة. *@
+    <link rel="stylesheet" href="~/css/tailwind-output.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/lib/fontawesome/css/all.min.css" asp-append-version="true">
+    <link rel="stylesheet" href="~/lib/fontsource-cairo/400.css" asp-append-version="true">
+    <link rel="stylesheet" href="~/lib/fontsource-cairo/700.css" asp-append-version="true">
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+        }
+
+        .admin-dropdown:hover .dropdown-menu, .admin-dropdown:focus-within .dropdown-menu {
+            display: block;
+        }
+    </style>
+</head>
+<body class="bg-blue-50/30">
+    <a href="#main-content" class="sr-only focus:not-sr-only">@(isArabic ? "انتقل إلى المحتوى" : "Skip to content")</a>
+    <header class="bg-[#10a34d] text-white shadow-md mb-6 p-4">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+
+            <div class="flex items-center gap-3">
+                <div class="text-3xl"><i class="fa-solid fa-leaf"></i></div>
+                <div>
+                    <h1 class="text-xl md:text-2xl font-bold">
+                        @(isArabic ? "أداة فحص القروض الزراعية" : "Agricultural Loan Screening Tool")
+                    </h1>
+                    <p class="text-xs opacity-90">
+                        @(isArabic ? "نظام متقدم لفحص وتقييم القروض الزراعية المقاومة للمناخ" : "Advanced System for Screening and Evaluating Climate-Resilient Agricultural Loans")
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    @if ((User.IsInRole("Admin") || User.IsInRole("Employee")))
+                    {
+                        <div class="relative admin-dropdown group">
+                            <button class="bg-sky-500 hover:bg-sky-600 text-white px-4 py-1.5 rounded text-sm font-bold flex items-center gap-2 transition-all shadow-sm">
+                                <i class="fa-solid fa-user-shield text-yellow-300"></i>
+                                @(isArabic ? "أدوات الإدارة" : "Admin Tools")
+                                <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                            </button>
+
+                            <div class="dropdown-menu hidden absolute z-50 mt-1 w-52 bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden @(isArabic ? "right-0" : "left-0")">
+                                <a asp-controller="Admin" asp-action="Dashboard" class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-50">
+                                    <i class="fa-solid fa-chart-line text-blue-500 @(isArabic ? "ml-2" : "mr-2")"></i> @(isArabic ? "لوحة الإحصائيات" : "Dashboard")
+                                </a>
+                                <a asp-controller="Admin" asp-action="ManageUsers" class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-50">
+                                    <i class="fa-solid fa-users-gear text-indigo-500 @(isArabic ? "ml-2" : "mr-2")"></i> @(isArabic ? "إدارة المستخدمين" : "Manage Users")
+                                </a>
+                                <a asp-controller="Admin" asp-action="PendingLoans" class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-50">
+                                    <i class="fa-solid fa-clock-rotate-left text-orange-500 @(isArabic ? "ml-2" : "mr-2")"></i> @(isArabic ? "طلبات معلقة" : "Pending Loans")
+                                </a>
+                                <a asp-controller="Admin" asp-action="AuditLogs" class="block px-4 py-2.5 text-sm text-gray-500 hover:bg-gray-900 hover:text-white transition-colors">
+                                    <i class="fa-solid fa-fingerprint @(isArabic ? "ml-2" : "mr-2")"></i> @(isArabic ? "سجل العمليات" : "Audit Logs")
+                                </a>
+                            </div>
+                        </div>
+                    }
+
+                    <form asp-controller="Account" asp-action="Logout" method="post" class="inline">
+                        <button type="submit" class="bg-white text-gray-700 px-4 py-1.5 rounded text-sm font-semibold flex items-center gap-2 hover:bg-gray-100 transition-colors shadow-sm">
+                            @(isArabic ? "تسجيل الخروج" : "Logout")
+                            <i class="fa-solid fa-right-from-bracket @(isArabic ? "rotate-180" : "")"></i>
+                        </button>
+                    </form>
+                }
+
+                <a href="/Home/SetLanguage?culture=@(isArabic ? "en-US" : "ar-JO")&returnUrl=@Uri.EscapeDataString(Context.Request.Path + Context.Request.QueryString)"
+                   class="bg-white text-gray-700 px-4 py-1.5 rounded text-sm font-semibold hover:bg-gray-100 transition-colors shadow-sm">
+                    @(isArabic ? "English" : "العربية")
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main id="main-content" role="main" class="container mx-auto px-4">
+        @RenderBody()
+    </main>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

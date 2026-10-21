@@ -1,0 +1,298 @@
+@model AgriculturalLoanSystem.Models.ViewModels.LoanCalculatorViewModel
+
+@{
+    ViewData["Title"] = System.Globalization.CultureInfo.CurrentCulture.Name.StartsWith("ar") ? "حاسبة القروض" : "Loan Calculator";
+    bool isArabic = System.Threading.Thread.CurrentThread.CurrentCulture.Name.StartsWith("ar");
+    string dir = isArabic ? "rtl" : "ltr";
+    string textAlign = isArabic ? "text-right" : "text-left";
+    string marginStart = isArabic ? "ml-2" : "mr-2";
+}
+
+<div class="p-4 md:p-8 @textAlign" dir="@dir">
+    <div asp-validation-summary="All" role="alert" class="text-red-700"></div>
+    <p class="text-sm text-gray-600">@(isArabic ? "الحساب المعروض تقديري؛ يعتمد الطلب على معدل الخادم عند الإرسال." : "Preview is an estimate; submitted applications use the server-configured interest rate.")</p>
+
+
+    <div class="bg-gradient-to-r from-green-700 via-emerald-600 to-green-600 text-white shadow-2xl rounded-lg mb-8">
+        <div class="max-w-6xl mx-auto px-6 py-6 flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-calculator"></i> @(isArabic ? "حاسبة القروض الذكية" : "Smart Loan Calculator")
+                </h1>
+                <p class="text-green-100 text-sm mt-1">
+                    @(isArabic ? $"العميل: {Model.ClientName}" : $"Client: {Model.ClientName}")
+                </p>
+            </div>
+            <div class="flex gap-2">
+                <a asp-controller="Clients" asp-action="Details" asp-route-clientId="@Model.ClientId" class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-md font-bold text-sm transition flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-right"></i> @(isArabic ? "عودة للملف" : "Back to Profile")
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-6xl mx-auto">
+
+
+        @if (Model.HasActivePreviousLoan)
+        {
+            <div class="bg-yellow-50 border-r-4 border-yellow-500 p-4 mb-6 rounded shadow-sm">
+                <div class="flex">
+                    <div class="flex-shrink-0"><i class="fa-solid fa-triangle-exclamation text-yellow-500 text-xl"></i></div>
+                    <div class="mr-3"><p class="text-sm text-yellow-700 font-bold">@Model.PreviousLoanWarning</p></div>
+                </div>
+            </div>
+        }
+
+
+        <div class="bg-white rounded-lg shadow-lg mb-6 overflow-hidden border border-gray-100">
+            <div class="bg-gray-50 p-4 border-b border-gray-200 flex justify-between items-center">
+                <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders"></i> @(isArabic ? "إعدادات القرض" : "Loan Parameters")
+                </h2>
+            </div>
+
+            <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">@(isArabic ? "تصنيف القرض" : "Category")</label>
+                    <select id="categoryInput" class="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 font-bold">
+                        <option value="SeasonalShortTerm">@(isArabic ? "قروض موسمية وقصيرة الأجل" : "Seasonal/Short Term")</option>
+                        <option value="MediumLongTerm" selected>@(isArabic ? "قروض متوسطة وطويلة الأجل" : "Medium/Long Term")</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">@(isArabic ? "قيمة القرض (دينار)" : "Amount")</label>
+                    <div class="relative">
+                        <input type="number" id="amountInput" value="5000" class="w-full p-3 border border-gray-300 rounded-lg font-bold text-lg" />
+                        <span class="absolute left-3 top-3 text-gray-400 font-bold">JOD</span>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">@(isArabic ? "مدة القرض (أشهر)" : "Duration")</label>
+                    <div class="relative">
+                        <input type="number" id="durationInput" value="12" class="w-full p-3 border border-gray-300 rounded-lg font-bold text-lg" />
+                        <div class="absolute left-3 top-3 text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">
+                            <span id="yearsDisplay">1</span> @(isArabic ? "سنة" : "Year")
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                    <label class="block text-sm font-bold text-blue-800 mb-2">@(isArabic ? "سعر الفائدة (%)" : "Rate")</label>
+                    <input type="text" id="rateInput" readonly class="w-full p-3 bg-white border border-blue-200 text-blue-700 rounded-lg font-black text-xl text-center shadow-inner" />
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">@(isArabic ? "تكرار السداد" : "Frequency")</label>
+                        <select id="frequencyInput" class="w-full p-3 border border-gray-300 rounded-lg bg-white font-medium">
+
+                            <option value="Weekly">@(isArabic ? "أسبوعي" : "Weekly")</option>
+                            <option value="Biweekly">@(isArabic ? "كل أسبوعين" : "Biweekly")</option>
+                            <option value="Monthly" selected>@(isArabic ? "شهري" : "Monthly")</option>
+                            <option value="Bimonthly">@(isArabic ? "كل شهرين" : "Bimonthly")</option>
+                            <option value="Quarterly">@(isArabic ? "ربع سنوي" : "Quarterly")</option>
+                            <option value="Semiannual">@(isArabic ? "نصف سنوي" : "Semiannual")</option>
+                            <option value="Annual">@(isArabic ? "سنوي" : "Annual")</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">@(isArabic ? "نوع الاحتساب" : "Type")</label>
+                        <select id="interestTypeInput" class="w-full p-3 border border-gray-300 rounded-lg bg-white">
+                            <option value="Simple">@(isArabic ? "بسيطة / ثابتة" : "Simple")</option>
+                            <option value="Reducing" selected>@(isArabic ? "متناقصة" : "Reducing")</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div id="resultsArea" class="space-y-6">
+            <div class="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-100">
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 border-b border-blue-100 text-center">
+                    <h2 class="text-xl font-bold text-gray-800">@(isArabic ? "ملخص القرض المقترح" : "Loan Summary")</h2>
+                </div>
+                <div class="p-6 grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
+                    <div class="p-4 rounded-xl border border-gray-100 bg-gray-50">
+                        <p class="text-xs text-gray-500 font-bold uppercase">@(isArabic ? "أصل القرض" : "Principal")</p>
+                        <p id="resPrincipal" class="text-2xl font-black text-gray-800">0</p>
+                    </div>
+                    <div class="p-4 rounded-xl border border-blue-100 bg-blue-50">
+                        <p class="text-xs text-blue-500 font-bold uppercase">@(isArabic ? "إجمالي الفائدة" : "Total Interest")</p>
+                        <p id="resTotalInterest" class="text-2xl font-black text-blue-700">0.00</p>
+                    </div>
+                    <div class="p-4 rounded-xl border border-purple-100 bg-purple-50">
+                        <p class="text-xs text-purple-500 font-bold uppercase">@(isArabic ? "المبلغ الإجمالي" : "Total Repayment")</p>
+                        <p id="resTotalRepayment" class="text-2xl font-black text-purple-700">0.00</p>
+                    </div>
+                    <div class="p-4 rounded-xl border-2 border-orange-200 bg-orange-50 shadow-sm transform scale-105">
+                        <p class="text-xs text-orange-600 font-bold uppercase">@(isArabic ? "القسط التقريبي" : "Installment")</p>
+                        <p id="resInstallment" class="text-2xl font-black text-orange-700">0.00</p>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-100">
+                <div class="p-4 bg-gray-50 border-b border-gray-200">
+                    <h2 class="text-lg font-bold text-gray-800">
+                        <i class="fa-solid fa-list-ol text-green-600 @marginStart"></i> @(isArabic ? "جدول الأقساط المتوقع" : "Payment Schedule")
+                    </h2>
+                </div>
+                <div class="overflow-x-auto max-h-[400px] overflow-y-auto">
+                    <table class="w-full text-sm text-center">
+                        <thead class="sticky top-0 bg-gray-100 text-gray-600 font-bold z-10 shadow-sm">
+                            <tr>
+                                <th class="p-4">#</th>
+                                <th class="p-4">@(isArabic ? "قيمة القسط" : "Payment")</th>
+                                <th class="p-4 text-green-700">@(isArabic ? "الأصل" : "Principal")</th>
+                                <th class="p-4 text-red-700">@(isArabic ? "الفائدة" : "Interest")</th>
+                                <th class="p-4 text-gray-500">@(isArabic ? "الرصيد" : "Balance")</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scheduleBody" class="divide-y divide-gray-100">
+
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+
+            <div class="flex gap-4 mb-12">
+                <form asp-action="CreateLoan" method="post" id="finalSubmitForm" class="w-full flex gap-4">
+                    <input type="hidden" name="ClientId" value="@Model.ClientId" />
+                    <input type="hidden" name="SessionId" value="@Model.SessionId" />
+                    <input type="hidden" name="LoanCategory" id="hiddenCategory" />
+
+                    @* (SEC-04): أُزيل حقل "Input.AnnualInterestRate" المخفي الذي كان يرسل معدل
+                       الفائدة المحسوب في المتصفح مباشرة إلى الخادم. الخادم الآن يتجاهل أي معدل
+                       فائدة قادم من العميل تمامًا ويعيد حسابه بنفسه من جدول الفوائد الرسمي
+                       (LoansController.CreateLoan) — حقل rateInput أدناه للعرض التقريبي فقط
+                       ولا يُرسَل ضمن النموذج إطلاقًا. *@
+                    <input type="hidden" name="Input.PrincipalAmount" id="hiddenAmount" />
+                    <input type="hidden" name="Input.DurationMonths" id="hiddenDuration" />
+                    <input type="hidden" name="Input.PaymentFrequency" id="hiddenFrequency" />
+                    <input type="hidden" name="Input.InterestType" id="hiddenInterestType" />
+
+                    <a asp-controller="Clients" asp-action="Details" asp-route-clientId="@Model.ClientId" class="flex-1 bg-white border border-gray-300 text-gray-600 py-4 rounded-xl font-bold text-center hover:bg-gray-50 transition shadow-sm">
+                        @(isArabic ? "إلغاء العملية" : "Cancel")
+                    </a>
+
+                    <button type="submit" class="flex-[2] bg-gray-900 text-white py-4 rounded-xl font-bold hover:bg-black transition shadow-lg flex items-center justify-center gap-3 text-lg">
+                        <i class="fa-solid fa-paper-plane text-blue-400"></i>
+                        @(isArabic ? "إرسال طلب القرض للمراجعة" : "Submit Loan Application")
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+                         const amountInput = document.getElementById('amountInput');
+            const durationInput = document.getElementById('durationInput');
+            const categoryInput = document.getElementById('categoryInput');
+            const frequencyInput = document.getElementById('frequencyInput');
+            const interestTypeInput = document.getElementById('interestTypeInput');
+            const rateInput = document.getElementById('rateInput');
+            const scheduleBody = document.getElementById('scheduleBody');
+
+                         const freqFactors = {
+                "Weekly": 52,
+                "Biweekly": 26,
+                "Monthly": 12,
+                "Bimonthly": 6,
+                "Quarterly": 4,
+                "Semiannual": 2,
+                "Annual": 1
+            };
+
+                         function getRate(amount, category) {
+                if (category === "MediumLongTerm") {
+                    if (amount <= 10000) return 6.5;
+                    if (amount <= 15000) return 7.0;
+                    if (amount <= 20000) return 7.5;
+                    if (amount <= 30000) return 8.0;
+                    if (amount <= 50000) return 8.5;
+                    return 9.0;
+                } else {
+                    if (amount <= 5000) return 6.5;
+                    if (amount <= 10000) return 7.0;
+                    if (amount <= 15000) return 7.5;
+                    if (amount <= 20000) return 8.0;
+                    if (amount <= 30000) return 8.5;
+                    return 9.0;
+                }
+            }
+
+                         function updateAll() {
+                const principal = parseFloat(amountInput.value) || 0;
+                const durationMonths = parseInt(durationInput.value) || 0;
+                const category = categoryInput.value;
+                const freqKey = frequencyInput.value;
+                const factor = freqFactors[freqKey];                  const intType = interestTypeInput.value;
+
+                const rate = getRate(principal, category);
+                rateInput.value = rate.toFixed(1) + ' %';
+                document.getElementById('yearsDisplay').textContent = (durationMonths / 12).toFixed(1);
+
+                if (principal <= 0 || durationMonths <= 0) return;
+
+                let totalInt = 0, installment = 0, rows = [];
+                                 const totalPayments = Math.max(1, Math.ceil((durationMonths / 12) * factor));
+
+                if (intType === "Simple") {
+                                         totalInt = principal * (rate / 100) * (durationMonths / 12);
+                    const totalRepay = principal + totalInt;
+                    installment = totalRepay / totalPayments;
+                    let bal = principal;
+                    for (let i = 1; i <= totalPayments; i++) {
+                        bal -= principal / totalPayments;
+                        rows.push({ n: i, a: installment, p: principal/totalPayments, i: totalInt/totalPayments, b: Math.max(0, bal) });
+                    }
+                } else {
+                                         const r = (rate / 100) / factor;                      installment = (principal * r) / (1 - Math.pow(1 + r, -totalPayments));
+                    let bal = principal;
+                    for (let i = 1; i <= totalPayments; i++) {
+                        let iPaid = bal * r;
+                        let pPaid = installment - iPaid;
+                        bal -= pPaid;
+                        rows.push({ n: i, a: installment, p: pPaid, i: iPaid, b: Math.max(0, bal) });
+                    }
+                    totalInt = (installment * totalPayments) - principal;
+                }
+
+                                 document.getElementById('resPrincipal').textContent = principal.toLocaleString();
+                document.getElementById('resTotalInterest').textContent = totalInt.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                document.getElementById('resTotalRepayment').textContent = (principal + totalInt).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                document.getElementById('resInstallment').textContent = installment.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+                                 scheduleBody.innerHTML = rows.map(r => `
+                    <tr class="hover:bg-green-50/50">
+                        <td class="p-3 text-gray-400 font-bold">${r.n}</td>
+                        <td class="p-3 font-bold text-gray-700">${r.a.toFixed(2)}</td>
+                        <td class="p-3 text-green-600 font-medium">${r.p.toFixed(2)}</td>
+                        <td class="p-3 text-red-500 font-medium">${r.i.toFixed(2)}</td>
+                        <td class="p-3 text-gray-400 font-mono">${r.b.toFixed(2)}</td>
+                    </tr>
+                `).join('');
+
+                                 document.getElementById('hiddenCategory').value = category;
+                document.getElementById('hiddenAmount').value = principal;
+                document.getElementById('hiddenDuration').value = durationMonths;
+                document.getElementById('hiddenFrequency').value = freqKey;                  document.getElementById('hiddenInterestType').value = intType;
+            }
+
+                         [amountInput, durationInput, categoryInput, frequencyInput, interestTypeInput].forEach(el => {
+                el.addEventListener('input', updateAll);
+            });
+
+                         updateAll();
+        });
+    </script>
+}

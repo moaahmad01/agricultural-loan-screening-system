@@ -1,0 +1,6 @@
+@{ var ar = System.Globalization.CultureInfo.CurrentCulture.Name.StartsWith("ar"); }
+<div role="status" class="max-w-3xl mx-auto p-8 bg-white rounded-xl">
+    <h1 class="text-2xl font-bold">@(ar ? "لا يوجد استبيان نشط" : "No active questionnaire")</h1>
+    <p>@(ar ? "يرجى التواصل مع الموظف لإعداد أقسام الفحص." : "Please contact staff to configure the screening sections.")</p>
+    <a asp-controller="Home" asp-action="Index" class="text-blue-700 underline">@(ar ? "الرئيسية" : "Home")</a>
+</div>

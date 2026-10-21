@@ -1,0 +1,259 @@
+@model IEnumerable<AgriculturalLoanSystem.Models.ViewModels.UserManagementViewModel>
+@using System.Globalization
+@{
+    var isArabic = CultureInfo.CurrentCulture.Name.StartsWith("ar");
+    ViewData["Title"] = isArabic ? "إدارة صلاحيات المستخدمين" : "User Permissions Management";
+    var userRoles = ViewBag.UserRoles as Dictionary<string, IList<string>>;
+}
+
+<div class="p-6 md:p-10 bg-gray-50 min-h-screen" dir="@(isArabic ? "rtl" : "ltr")">
+
+
+    <div class="bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-lg rounded-3xl mb-10 overflow-hidden relative">
+        <div class="absolute top-0 right-0 p-8 opacity-20 text-9xl transform translate-x-10 -translate-y-10">
+            <i class="fa-solid fa-users-gear"></i>
+        </div>
+        <div class="max-w-7xl mx-auto px-8 py-12 relative z-10 flex items-center justify-between">
+            <div class="flex items-center gap-6">
+                <div class="bg-white/20 w-20 h-20 rounded-2xl flex items-center justify-center text-4xl shadow-inner backdrop-blur-sm border border-white/10">
+                    <i class="fa-solid fa-user-shield"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">
+                        @(isArabic ? "إدارة الوصول والتحقق" : "Access & Identity Control")
+                    </h1>
+                    <p class="text-sky-100 text-lg mt-2 font-medium opacity-90">
+                        @(isArabic ? "إدارة أدوار الموظفين وضبط صلاحيات الدخول للنظام" : "Configure employee roles and system access levels")
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+        <div class="bg-white p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-300 border border-gray-100 flex items-center justify-between">
+            <div>
+                <p class="text-gray-400 text-xs font-bold uppercase tracking-wider">@(isArabic ? "إجمالي المستخدمين" : "Total Users")</p>
+                <h3 class="text-4xl font-black text-gray-800 mt-2">@Model.Count()</h3>
+            </div>
+            <div class="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 text-2xl">
+                <i class="fa-solid fa-users"></i>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-300 border border-gray-100 flex items-center justify-between">
+            <div>
+                <p class="text-gray-400 text-xs font-bold uppercase tracking-wider">@(isArabic ? "الكادر الوظيفي" : "Employee Members")</p>
+                <h3 class="text-4xl font-black text-emerald-600 mt-2">@ViewBag.EmployeeCount</h3>
+            </div>
+            <div class="w-14 h-14 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-500 text-2xl">
+                <i class="fa-solid fa-user-tie"></i>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-300 border border-gray-100 flex items-center justify-between">
+            <div>
+                <p class="text-gray-400 text-xs font-bold uppercase tracking-wider">@(isArabic ? "المواطنون" : "Citizens")</p>
+                <h3 class="text-4xl font-black text-orange-500 mt-2">@ViewBag.CitizenCount</h3>
+            </div>
+            <div class="w-14 h-14 rounded-full bg-orange-50 flex items-center justify-center text-orange-500 text-2xl">
+                <i class="fa-solid fa-person"></i>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+        <div class="p-6 border-b border-gray-50 bg-gray-50/30">
+            <div class="relative max-w-lg">
+                <div class="absolute inset-y-0 @(isArabic ? "right-0 pr-4" : "left-0 pl-4") flex items-center pointer-events-none">
+                    <i class="fa-solid fa-magnifying-glass text-gray-400"></i>
+                </div>
+                <input type="text" id="userSearchInput" onkeyup="filterUsersTable()"
+                       placeholder="@(isArabic ? "ابحث بالاسم أو الرقم الوطني..." : "Search by name or ID...")"
+                       class="block w-full @(isArabic ? "pr-11" : "pl-11") py-3 text-sm text-gray-900 bg-white rounded-xl border-0 ring-1 ring-gray-200 placeholder:text-gray-400 focus:ring-2 focus:ring-sky-500 focus:outline-none transition-shadow shadow-sm">
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left">
+                <thead class="text-xs text-gray-500 uppercase bg-gray-50 border-b border-gray-100">
+                    <tr>
+                        <th scope="col" class="px-8 py-5 @(isArabic ? "text-right" : "text-left")">@(isArabic ? "المستخدم" : "User Info")</th>
+                        <th scope="col" class="px-8 py-5">@(isArabic ? "المنطقة" : "Region")</th>
+                        <th scope="col" class="px-8 py-5">@(isArabic ? "الدور الحالي" : "Role")</th>
+                        <th scope="col" class="px-8 py-5 text-center">@(isArabic ? "الإجراءات" : "Actions")</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50 bg-white">
+                    @foreach (var user in Model)
+                    {
+                        var roles = userRoles != null && userRoles.ContainsKey(user.UserId) ? userRoles[user.UserId] : new List<string>();
+                        var isEmployee = roles.Contains("Employee");
+                        var isAdmin = roles.Contains("Admin");
+
+                        <tr class="hover:bg-sky-50/40 transition-colors duration-200 user-row group">
+                            <td class="px-8 py-5 whitespace-nowrap">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-10 h-10 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center font-bold text-sm shadow-sm">
+                                        @(string.IsNullOrEmpty(user.FullNameAr) ? "?" : user.FullNameAr.Substring(0, 1))
+                                    </div>
+                                    <div>
+                                        <div class="text-base font-bold text-gray-800 searchable group-hover:text-sky-700 transition-colors">@user.FullNameAr</div>
+                                        <div class="text-xs text-gray-400 font-mono searchable">@user.UserName</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-8 py-5 whitespace-nowrap text-gray-500 searchable">
+                                <span class="bg-gray-100 text-gray-600 py-1 px-3 rounded-full text-xs font-medium">@user.Region</span>
+                            </td>
+                            <td class="px-8 py-5 whitespace-nowrap">
+                                @if (isAdmin)
+                                {
+                                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-50 text-red-600 border border-red-100">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-red-600"></span> ADMIN
+                                    </span>
+                                }
+                                else if (isEmployee)
+                                {
+                                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-600 border border-emerald-100">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span> Employee
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-gray-50 text-gray-500 border border-gray-100">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span> CITIZEN
+                                    </span>
+                                }
+                            </td>
+                            <td class="px-8 py-5 whitespace-nowrap text-center">
+                                @if (!isAdmin)
+                                {
+                                    <form asp-action="@(isEmployee ? "RemoveEmployee" : "MakeEmployee")" method="post" class="inline-block user-action-form">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="userId" value="@user.UserId" />
+
+                                        @if (isEmployee)
+                                        {
+
+                                            <button type="button"
+                                                    onclick="openConfirmModal(this, '@(isArabic ? "سحب الصلاحيات" : "Revoke Privileges")', '@(isArabic ? $"هل أنت متأكد من سحب صلاحيات الموظف من {user.FullNameAr}؟" : $"Are you sure you want to revoke Employee privileges from {user.FullNameEn}?")', 'warning')"
+                                                    class="text-orange-500 hover:text-white border border-orange-200 hover:bg-orange-500 focus:ring-4 focus:outline-none focus:ring-orange-300 font-medium rounded-lg text-xs px-4 py-2 text-center inline-flex items-center transition-all duration-200">
+                                                <i class="fa-solid fa-user-minus mr-2"></i> @(isArabic ? "سحب" : "Revoke")
+                                            </button>
+                                        }
+                                        else
+                                        {
+
+                                            <button type="button"
+                                                    onclick="openConfirmModal(this, '@(isArabic ? "ترقية الموظف" : "Promote User")', '@(isArabic ? $"هل أنت متأكد من ترقية {user.FullNameAr} إلى موظف؟" : $"Are you sure you want to promote {user.FullNameEn} to Employee?")', 'info')"
+                                                    class="text-white bg-sky-600 hover:bg-sky-700 focus:ring-4 focus:outline-none focus:ring-sky-300 font-medium rounded-lg text-xs px-4 py-2 text-center inline-flex items-center transition-all duration-200 shadow-sm hover:shadow">
+                                                <i class="fa-solid fa-user-plus mr-2"></i> @(isArabic ? "ترقية" : "Promote")
+                                            </button>
+                                        }
+                                    </form>
+                                }
+                                else
+                                {
+                                    <span class="text-gray-300 text-xs italic cursor-not-allowed">@(isArabic ? "غير قابل للتعديل" : "Protected")</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+<div id="confirmModal" class="relative z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+
+    <div class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm transition-opacity"></div>
+
+    <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+
+            <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg border border-gray-100">
+                <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start @(isArabic ? "flex-row-reverse text-right" : "")">
+
+                        <div id="modalIconBg" class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-sky-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <i id="modalIcon" class="fa-solid fa-circle-exclamation text-sky-600 text-lg"></i>
+                        </div>
+
+                        <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left @(isArabic ? "sm:mr-4 sm:ml-0 sm:text-right" : "")">
+                            <h3 class="text-lg font-bold leading-6 text-gray-900" id="modalTitle">Confirm Action</h3>
+                            <div class="mt-2">
+                                <p class="text-sm text-gray-500" id="modalMessage">Are you sure you want to proceed?</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 @(isArabic ? "sm:flex-row-reverse" : "") gap-2">
+                    <button type="button" id="confirmBtn" onclick="submitTargetForm()"
+                            class="inline-flex w-full justify-center rounded-xl bg-sky-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-sky-500 sm:w-auto transition-all">
+                        @(isArabic ? "نعم، تأكيد" : "Yes, Confirm")
+                    </button>
+                    <button type="button" onclick="closeModal()"
+                            class="mt-3 inline-flex w-full justify-center rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto transition-all">
+                        @(isArabic ? "إلغاء" : "Cancel")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+         function filterUsersTable() {
+        const input = document.getElementById('userSearchInput');
+        const filter = input.value.toLowerCase();
+        const rows = document.querySelectorAll('.user-row');
+
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('.searchable');
+            let match = false;
+            cells.forEach(cell => {
+                if (cell.textContent.toLowerCase().includes(filter)) match = true;
+            });
+            row.classList.toggle('hidden', !match);
+        });
+    }
+
+         let targetForm = null;
+    function openConfirmModal(button, title, message, type) {
+                 targetForm = button.closest('form');
+
+                 document.getElementById('modalTitle').textContent = title;
+        document.getElementById('modalMessage').textContent = message;
+
+                 const iconBg = document.getElementById('modalIconBg');
+        const icon = document.getElementById('modalIcon');
+        const confirmBtn = document.getElementById('confirmBtn');
+
+        if (type === 'warning') {
+            iconBg.className = "mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-orange-100 sm:mx-0 sm:h-10 sm:w-10";
+            icon.className = "fa-solid fa-triangle-exclamation text-orange-600 text-lg";
+            confirmBtn.className = "inline-flex w-full justify-center rounded-xl bg-orange-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-orange-500 sm:w-auto transition-all";
+        } else {
+            iconBg.className = "mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-sky-100 sm:mx-0 sm:h-10 sm:w-10";
+            icon.className = "fa-solid fa-check-circle text-sky-600 text-lg";
+            confirmBtn.className = "inline-flex w-full justify-center rounded-xl bg-sky-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-sky-500 sm:w-auto transition-all";
+        }
+
+                 document.getElementById('confirmModal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+        document.getElementById('confirmModal').classList.add('hidden');
+        targetForm = null;      }
+
+    function submitTargetForm() {
+        if (targetForm) {
+            targetForm.submit();
+        }
+    }
+</script>

@@ -1,0 +1,147 @@
+@model AgriculturalLoanSystem.Models.ViewModels.ClientDetailsViewModel
+
+@{
+         var isArabic = System.Threading.Thread.CurrentThread.CurrentCulture.Name.StartsWith("ar");
+    ViewData["Title"] = isArabic ? "تعليمات استخدام الأداة" : "Tool Instructions";
+
+                   int clientId = Model.Id;
+    int sessionId = ViewBag.SessionId ?? 0;
+}
+
+<div class="p-4 md:p-8" dir="@(isArabic ? "rtl" : "ltr")">
+
+
+    <div class="bg-gradient-to-r from-green-700 via-emerald-600 to-green-600 text-white shadow-2xl rounded-lg mb-8">
+        <div class="max-w-4xl mx-auto px-6 py-8 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+
+                <div class="bg-white/20 w-16 h-16 rounded-full flex items-center justify-center text-white text-3xl shadow-inner">
+                    <i class="fa-solid fa-book-open"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold">
+                        @(isArabic ? $"أهلاً بك، {Model.FullNameAr}" : $"Welcome, {(string.IsNullOrWhiteSpace(Model.FullNameEn) ? Model.FullNameAr : Model.FullNameEn)}")
+                    </h1>
+                    <p class="text-green-100 text-sm mt-1 uppercase tracking-wider">
+                        @(isArabic ? "تعليمات فحص القروض الزراعية المقاومة للمناخ" : "Climate-Resilient Agricultural Loan Instructions")
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-4xl mx-auto">
+
+
+        <div class="bg-white rounded-lg shadow-lg mb-6 overflow-hidden border border-gray-100">
+
+
+            <div class="bg-gradient-to-r from-green-50 to-blue-50 p-6 border-b border-green-200 text-center">
+                <h2 class="text-2xl font-bold text-gray-800">
+                    @(isArabic ? "تعليمات استخدام أداة الفحص (CLIMATE)" : "CLIMATE Screening Tool Instructions")
+                </h2>
+            </div>
+
+            <div class="p-8 space-y-8">
+
+
+                <section class="space-y-3">
+                    <h3 class="font-bold text-lg text-green-800 flex items-center gap-2">
+                        <i class="fa-solid fa-bullseye"></i>
+                        @(isArabic ? "الهدف والنطاق:" : "Objective & Scope:")
+                    </h3>
+                    <div class="bg-blue-50 border-r-4 border-blue-500 p-5 rounded-lg">
+                        <p class="text-gray-700 leading-relaxed text-sm">
+                            @(isArabic
+                                                        ? "تهدف هذه الأداة لمساعدة ضباط الإقراض في تقييم طلبات القروض من حيث المخاطر المناخية والاستدامة. صُممت لتكملة أنظمة مؤسسة الإقراض الزراعي الراسخة لضمان توافق المشاريع مع ممارسات الزراعة الذكية."
+                                                        : "This tool aims to help loan officers assess loan applications in terms of climate risk and sustainability, ensuring projects align with smart farming practices.")
+                        </p>
+                    </div>
+                </section>
+
+
+                <section class="space-y-4">
+                    <h3 class="font-bold text-lg text-green-800 flex items-center gap-2">
+                        <i class="fa-solid fa-gears"></i>
+                        @(isArabic ? "آلية عملية التقييم:" : "Assessment Mechanism:")
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                        <div class="p-4 border-2 border-gray-100 rounded-lg hover:border-green-400 transition-all">
+                            <div class="flex items-center gap-3 mb-2">
+                                <span class="bg-green-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">1</span>
+                                <h4 class="font-bold text-gray-800">@(isArabic ? "تحديد الإجابات" : "Select Answers")</h4>
+                            </div>
+                            <p class="text-xs text-gray-600 leading-relaxed">
+                                @(isArabic ? "سجّل (نعم) إذا كان المشروع يلبي المعيار، و (لا) إذا لم يكن كذلك." : "Record (Yes) if criteria met, (No) if not.")
+                            </p>
+                        </div>
+
+                        <div class="p-4 border-2 border-gray-100 rounded-lg hover:border-green-400 transition-all">
+                            <div class="flex items-center gap-3 mb-2">
+                                <span class="bg-green-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">2</span>
+                                <h4 class="font-bold text-gray-800">@(isArabic ? "النقاط والتوصية" : "Scoring & Recommendation")</h4>
+                            </div>
+                            <p class="text-xs text-gray-600 leading-relaxed">
+                                @(isArabic ? "ستقوم الأداة تلقائياً باحتساب النتيجة النهائية وتحديد الإجراءات الضرورية." : "The tool will auto-calculate the final result and determine necessary actions.")
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+
+                <div class="bg-gray-50 p-5 rounded-lg border border-gray-200 mt-6">
+                    <label class="flex items-start gap-4 cursor-pointer">
+
+                        <input type="checkbox" id="consentCheckbox" class="w-6 h-6 mt-1 text-green-600 rounded focus:ring-green-500 border-gray-300" onchange="toggleButton()">
+                        <div class="flex-1">
+                            <span class="font-bold text-green-800 block text-base">
+                                @(isArabic ? "أقر بأنني قرأت وفهمت التعليمات وأوافق على المتابعة" : "I acknowledge reading and understanding the instructions")
+                            </span>
+                            <span class="text-gray-500 text-xs">
+                                @(isArabic ? "بالموافقة، أنت تؤكد أن الإجابات ستكون دقيقة وموافقة لسياسات المؤسسة." : "By agreeing, you confirm that answers will be accurate and compliant with policies.")
+                            </span>
+                        </div>
+                    </label>
+                </div>
+
+
+                <div class="flex gap-4 pt-4 border-t border-gray-100">
+
+                    <a asp-controller="Clients" asp-action="Details" asp-route-clientId="@clientId"
+                       class="flex-1 bg-white border border-gray-300 text-gray-700 py-3 rounded-lg font-bold text-center hover:bg-gray-50">
+                        @(isArabic ? "إلغاء والعودة" : "Cancel & Back")
+                    </a>
+
+
+                    <a href="@Url.Action("Tool", "Screening", new { clientId = clientId, sessionId = sessionId })"
+                       id="nextButton"
+                       class="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-3 rounded-lg font-bold shadow-md opacity-50 cursor-not-allowed pointer-events-none transition-all duration-300 text-center">
+                        @(isArabic ? "بدء الفحص" : "Start Screening")
+                        <i class="fa-solid @(isArabic ? "fa-arrow-left mr-2" : "fa-arrow-right ml-2")"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    /**
+     * وظيفة للتحقق من حالة الـ Checkbox
+     * إذا تم الاختيار، يتم تفعيل زر "بدء الفحص" وتغيير مظهره
+     */
+    function toggleButton() {
+        const checkbox = document.getElementById('consentCheckbox');
+        const button = document.getElementById('nextButton');
+
+        if (checkbox.checked) {
+                         button.classList.remove('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
+            button.classList.add('hover:from-blue-700', 'hover:to-cyan-700');
+        } else {
+                         button.classList.add('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
+            button.classList.remove('hover:from-blue-700', 'hover:to-cyan-700');
+        }
+    }
+</script>

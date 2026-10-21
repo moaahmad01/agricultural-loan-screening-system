@@ -1,0 +1,58 @@
+name: agricultural-loan-system
+
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      # (DEVOPS-02): لا كلمة مرور ثابتة داخل الكود أو هذا الملف — تُقرأ من متغير بيئة إلزامي
+      # (راجع ملف .env.example المرافق). فشل التشغيل بلا تعريفه أفضل من قيمة افتراضية ضعيفة.
+      MSSQL_SA_PASSWORD: ${DB_SA_PASSWORD:?يجب تعريف DB_SA_PASSWORD في ملف .env}
+      MSSQL_PID: Express
+    ports:
+      - "127.0.0.1:1433:1433"
+    volumes:
+      - db-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  # (DEVOPS-03): خدمة منفصلة تشغّل الترحيل مرة واحدة فقط عند كل نشر، بدل تشغيله تلقائيًا داخل
+  # Program.cs عند كل إقلاع للتطبيق نفسه (كان يخاطر بتسابق عدة نسخ من التطبيق على ترحيل نفس
+  # القاعدة في آنٍ واحد لو تم تشغيل أكثر من Replica مستقبلاً).
+  migrator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: migrator
+    environment:
+      ConnectionStrings__DefaultConnection: "Server=db;Database=LoansDB;User Id=sa;Password=${DB_SA_PASSWORD:?يجب تعريف DB_SA_PASSWORD في ملف .env};TrustServerCertificate=True"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: final
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: "Server=db;Database=LoansDB;User Id=sa;Password=${DB_SA_PASSWORD:?يجب تعريف DB_SA_PASSWORD في ملف .env};TrustServerCertificate=True"
+      INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:-}
+    volumes:
+      - private-data:/app/App_Data
+    depends_on:
+      db:
+        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
+
+volumes:
+  db-data:
+  private-data:

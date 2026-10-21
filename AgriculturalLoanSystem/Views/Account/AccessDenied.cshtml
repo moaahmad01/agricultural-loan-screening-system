@@ -1,0 +1,25 @@
+@{
+    var isArabic = System.Threading.Thread.CurrentThread.CurrentCulture.Name.StartsWith("ar");
+    ViewData["Title"] = isArabic ? "الوصول مرفوض" : "Access Denied";
+}
+
+<div class="flex items-center justify-center min-h-[70vh] px-4" dir="@(isArabic ? "rtl" : "ltr")">
+    <div class="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl border border-red-100 text-center">
+        <div class="bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i class="fa-solid fa-lock text-2xl text-red-600"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-800 mb-2">
+            @(isArabic ? "ليست لديك صلاحية الوصول" : "Access Denied")
+        </h2>
+        <p class="text-sm text-gray-500 mb-8">
+            @(isArabic
+                ? "حسابك الحالي لا يملك الصلاحية اللازمة لعرض هذه الصفحة. إذا كنت تعتقد أن هذا خطأ، تواصل مع مسؤول النظام."
+                : "Your account doesn't have permission to view this page. If you believe this is a mistake, please contact your system administrator.")
+        </p>
+        <a asp-controller="Home" asp-action="Index"
+           class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#10a34d] text-white font-bold text-sm shadow-md hover:bg-emerald-700 transition-all">
+            <i class="fa-solid fa-house"></i>
+            @(isArabic ? "العودة للصفحة الرئيسية" : "Back to Home")
+        </a>
+    </div>
+</div>

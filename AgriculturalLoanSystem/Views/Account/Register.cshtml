@@ -1,0 +1,91 @@
+@model AgriculturalLoanSystem.Models.ViewModels.RegisterViewModel
+
+@{
+    var isArabic = System.Threading.Thread.CurrentThread.CurrentCulture.Name.StartsWith("ar");
+    ViewData["Title"] = isArabic ? "إنشاء حساب" : "Register";
+}
+
+<div class="flex items-center justify-center min-h-[80vh] px-4" dir="@(isArabic ? "rtl" : "ltr")">
+    <div class="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl border border-green-100">
+        <div class="text-center mb-8">
+            <div class="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fa-solid fa-user-plus text-2xl text-green-600"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-800">@(isArabic ? "فتح حساب مواطن" : "Citizen Registration")</h2>
+            <p class="text-gray-500 text-sm mt-2">@(isArabic ? "أدخل بياناتك للوصول لخدمات القروض" : "Enter your details to access loan services")</p>
+        </div>
+
+        <form asp-action="Register" method="post" class="space-y-4">
+            <div asp-validation-summary="ModelOnly" class="text-red-500 text-xs text-center list-none"></div>
+
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">@(isArabic ? "الاسم الكامل" : "Full Name")</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 @(isArabic ? "right-0 pr-3" : "left-0 pl-3") flex items-center text-gray-400">
+                        <i class="fa-solid fa-user"></i>
+                    </span>
+                    <input asp-for="FullNameAr" class="w-full @(isArabic ? "pr-10" : "pl-10") py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 outline-none" placeholder="@(isArabic ? "الاسم كما في الهوية" : "Full Name as in ID")">
+                </div>
+                <span asp-validation-for="FullNameAr" class="text-red-500 text-xs"></span>
+            </div>
+
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">@(isArabic ? "الرقم الوطني" : "National ID")</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 @(isArabic ? "right-0 pr-3" : "left-0 pl-3") flex items-center text-gray-400">
+                        <i class="fa-solid fa-id-card"></i>
+                    </span>
+                    <input asp-for="NationalId" class="w-full @(isArabic ? "pr-10" : "pl-10") py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 outline-none" placeholder="10 Digits">
+                </div>
+                <span asp-validation-for="NationalId" class="text-red-500 text-xs"></span>
+            </div>
+
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">@(isArabic ? "رقم الهاتف" : "Phone Number")</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 @(isArabic ? "right-0 pr-3" : "left-0 pl-3") flex items-center text-gray-400">
+                        <i class="fa-solid fa-phone"></i>
+                    </span>
+                    <input asp-for="PhoneNumber" class="w-full @(isArabic ? "pr-10" : "pl-10") py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 outline-none" placeholder="07XXXXXXXX">
+                </div>
+                <span asp-validation-for="PhoneNumber" class="text-red-500 text-xs"></span>
+            </div>
+
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">@(isArabic ? "كلمة المرور" : "Password")</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 @(isArabic ? "right-0 pr-3" : "left-0 pl-3") flex items-center text-gray-400">
+                        <i class="fa-solid fa-lock"></i>
+                    </span>
+                    <input asp-for="Password" type="password" class="w-full @(isArabic ? "pr-10" : "pl-10") py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 outline-none">
+                </div>
+                <span asp-validation-for="Password" class="text-red-500 text-xs"></span>
+            </div>
+
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">@(isArabic ? "تأكيد كلمة المرور" : "Confirm Password")</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 @(isArabic ? "right-0 pr-3" : "left-0 pl-3") flex items-center text-gray-400">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </span>
+                    <input asp-for="ConfirmPassword" type="password" class="w-full @(isArabic ? "pr-10" : "pl-10") py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 outline-none">
+                </div>
+                <span asp-validation-for="ConfirmPassword" class="text-red-500 text-xs"></span>
+            </div>
+
+            <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl shadow-lg transition-all transform active:scale-95">
+                @(isArabic ? "إنشاء الحساب" : "Create Account")
+            </button>
+        </form>
+
+        <div class="mt-6 text-center text-sm">
+            <span class="text-gray-500">@(isArabic ? "لديك حساب؟" : "Already have an account?")</span>
+            <a asp-action="Login" class="text-green-600 font-bold hover:underline ml-1">@(isArabic ? "سجل دخولك" : "Login here")</a>
+        </div>
+    </div>
+</div>

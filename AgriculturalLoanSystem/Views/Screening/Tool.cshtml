@@ -1,0 +1,388 @@
+@model List<AgriculturalLoanSystem.Data.Entities.Section>
+@using System.Globalization
+@using AgriculturalLoanSystem.Data.Entities
+@using AgriculturalLoanSystem.Data.Enums
+
+@{
+    var isArabic = CultureInfo.CurrentCulture.Name.StartsWith("ar");
+    ViewData["Title"] = isArabic ? "أداة الفحص" : "Screening Tool";
+
+    int clientId = ViewBag.ClientId ?? 0;
+    int sessionId = ViewBag.SessionId ?? 0;
+    int currentSectionIndex = ViewBag.CurrentSectionIndex ?? 0;
+
+    var existingAnswers = ViewBag.ExistingAnswers as List<ScreeningAnswer> ?? new List<ScreeningAnswer>();
+    var completedSections = ViewBag.CompletedSectionIndexes as List<int> ?? new List<int>();
+    var existingDocs = ViewBag.ExistingSectionDocs as List<ScreeningDocument> ?? new List<ScreeningDocument>();
+
+    if (!Model.Any())
+    {
+        <div class="alert alert-danger">
+            @(isArabic ? "لم يتم تحميل أي أقسام فحص." : "No screening sections loaded.")
+        </div>
+        return;
+    }
+
+    if (currentSectionIndex < 0 || currentSectionIndex >= Model.Count) currentSectionIndex = 0;
+
+    var currentSection = Model[currentSectionIndex];
+    int totalSections = Model.Count;
+    var isLast = currentSectionIndex == totalSections - 1;
+
+    int totalQuestionsInSystem = Model.Sum(s => s.Questions.Count);
+    int answeredQuestionsCount = existingAnswers.Count;
+    int progress = totalQuestionsInSystem > 0 ? (int)(((double)answeredQuestionsCount / totalQuestionsInSystem) * 100) : 0;
+}
+
+<div class="p-4 md:p-8" dir="@(isArabic ? "rtl" : "ltr")">
+
+    <div class="bg-gradient-to-r from-green-700 via-emerald-600 to-green-600 text-white shadow-2xl rounded-lg mb-8">
+        <div class="max-w-4xl mx-auto px-6 py-6 flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold">
+                    <i class="fa-solid fa-clipboard-list ml-2 mr-2"></i>
+                    @(isArabic ? "أداة الفحص للعملاء الأفراد" : "Individual Client Screening Tool")
+                </h1>
+                <p class="text-green-100 text-sm mt-1">
+                    @(isArabic ? $"القسم {currentSectionIndex + 1} من {totalSections}" : $"Section {currentSectionIndex + 1} of {totalSections}")
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-4xl mx-auto">
+
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6 border border-gray-100">
+            <div class="flex justify-between text-sm mb-2">
+                <span class="font-bold text-gray-700">@(isArabic ? "التقدم الإجمالي" : "Overall Progress")</span>
+                <span class="font-bold text-green-600">@progress%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-3">
+                <div class="bg-gradient-to-r from-green-600 to-emerald-600 h-3 rounded-full transition-all duration-500" style="width: @progress%"></div>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap gap-2 mb-6 overflow-x-auto pb-2 no-scrollbar">
+            @for (int i = 0; i < Model.Count; i++)
+            {
+                var isCurrent = (i == currentSectionIndex);
+                var isDone = completedSections.Contains(i);
+                var sName = isArabic ? Model[i].SectionNameAr : Model[i].SectionNameEn;
+
+                <a href="@Url.Action("Tool", new { clientId = clientId, sessionId = sessionId, currentSectionIndex = i })"
+                   class="nav-link-section px-4 py-2 rounded-lg text-xs font-bold transition-all border-2 flex items-center gap-2 whitespace-nowrap
+                                        @(isCurrent ? "bg-sky-600 border-sky-600 text-white shadow-md scale-105" :
+                                                        isDone ? "bg-green-50 border-green-200 text-green-700 hover:bg-green-100" :
+                                                        "bg-white border-gray-200 text-gray-500 hover:border-green-300")">
+                @if (isDone)
+                    {
+                        <i class="fa-solid fa-check-double text-green-500"></i>
+                    }
+                    @sName
+                </a>
+            }
+        </div>
+
+        <div class="bg-white rounded-lg shadow-lg mb-6 overflow-hidden">
+
+            <div class="bg-gradient-to-r from-green-50 to-blue-50 p-4 border-b border-green-200">
+                <h2 class="text-2xl font-bold text-gray-800">
+                    @(isArabic? currentSection.SectionNameAr: currentSection.SectionNameEn)
+                </h2>
+            </div>
+
+            <form id="screeningForm" method="post" asp-action="ProcessSection" class="p-6 space-y-6">
+                <input type="hidden" name="clientId" value="@clientId" />
+                <input type="hidden" name="sessionId" value="@sessionId" />
+                <input type="hidden" name="currentSectionIndex" value="@currentSectionIndex" />
+                @Html.AntiForgeryToken()
+
+                @for (int i = 0; i < currentSection.Questions.Count; i++)
+                {
+                    var question = currentSection.Questions.ElementAt(i);
+                    var savedAnswer = existingAnswers.FirstOrDefault(a => a.QuestionId == question.Id)?.Answer;
+
+                    <div class="p-5 border-2 border-gray-200 rounded-lg hover:border-green-400 hover:bg-green-50 transition-all group question-block">
+                        <div class="flex items-start gap-4 mb-4">
+                            <div class="flex-shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold text-sm">
+                                @(i + 1)
+                            </div>
+                            <p class="text-gray-900 font-bold text-lg flex-1 leading-relaxed">
+                                @(isArabic? question.QuestionTextAr: question.QuestionTextEn)
+                            </p>
+                        </div>
+
+                        <input type="hidden" name="Answers[@i].QuestionId" value="@question.Id" />
+
+                        <div class="flex gap-3">
+                            <label class="flex-1 cursor-pointer">
+                                <input type="radio" name="Answers[@i].Answer" value="Yes" class="peer sr-only option-radio" required
+                                       @(savedAnswer == AnswerType.Yes ? "checked" : "") />
+                                <div class="w-full py-2 text-center rounded-md border-2 border-green-300 text-green-700 font-bold transition-all
+                                                          peer-checked:bg-green-600 peer-checked:text-white peer-checked:border-green-600
+                                                          hover:bg-green-100 flex items-center justify-center gap-2">
+                                    <i class="fa-regular fa-circle-check"></i> @(isArabic ? "نعم" : "Yes")
+                                </div>
+                            </label>
+
+                            <label class="flex-1 cursor-pointer">
+                                <input type="radio" name="Answers[@i].Answer" value="No" class="peer sr-only option-radio" required
+                                       @(savedAnswer == AnswerType.No ? "checked" : "") />
+                                <div class="w-full py-2 text-center rounded-md border-2 border-red-300 text-red-700 font-bold transition-all
+                                                          peer-checked:bg-red-600 peer-checked:text-white peer-checked:border-red-600
+                                                          hover:bg-red-50 flex items-center justify-center gap-2">
+                                    <i class="fa-regular fa-circle-xmark"></i> @(isArabic ? "لا" : "No")
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                }
+
+                <div class="mt-10 p-6 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h3 class="text-lg font-black text-slate-700 flex items-center gap-2">
+                                <i class="fa-solid fa-folder-tree text-blue-600"></i>
+                                @(isArabic ? "الوثائق المرفقة لهذا القسم" : "Section Documents")
+                            </h3>
+                            <p class="text-[10px] text-slate-400 font-bold uppercase mt-1">@(isArabic ? "رفع وحذف المستندات الداعمة" : "Upload & Manage Documents")</p>
+                        </div>
+
+                        <div class="relative">
+                            <input type="file" id="sectionDocInput" class="hidden" onchange="uploadSectionDocument(this, @sessionId, @currentSection.Id)" />
+                            <button type="button" onclick="document.getElementById('sectionDocInput').click()"
+                                    class="bg-sky-600 hover:bg-sky-700 text-white px-5 py-2.5 rounded-xl text-sm font-black shadow-lg transition-all flex items-center gap-2">
+                                <i class="fa-solid fa-plus-circle"></i>
+                                @(isArabic ? "إرفاق وثيقة" : "Attach Document")
+                                <span id="uploadSpinner" class="hidden"><i class="fa-solid fa-circle-notch animate-spin"></i></span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="uploadedFilesList" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        @foreach (var doc in existingDocs)
+                        {
+                            <div id="doc-card-@doc.Id" class="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-200 shadow-sm transition-all hover:border-blue-200 group">
+                                <div class="flex items-center gap-3 overflow-hidden">
+                                    <i class="fa-solid fa-file-pdf text-red-500 text-lg shrink-0"></i>
+                                    <p class="text-xs font-bold text-slate-700 truncate" title="@doc.FileName">@doc.FileName</p>
+                                </div>
+                                <div class="flex items-center gap-1 shrink-0">
+                                    <a asp-controller="Documents" asp-action="Screening" asp-route-documentId="@doc.Id" target="_blank" class="w-8 h-8 rounded-lg text-blue-500 hover:bg-blue-50 flex items-center justify-center transition-all">
+                                        <i class="fa-solid fa-eye"></i>
+                                    </a>
+                                    <button type="button" onclick="deleteDocument(@doc.Id)" class="w-8 h-8 rounded-lg text-red-400 hover:bg-red-50 flex items-center justify-center transition-all">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <div id="noFilesMsg" class="text-center py-4 @(existingDocs.Any() ? "hidden" : "")">
+                        <p class="text-xs text-slate-300 italic">@(isArabic ? "لا توجد وثائق مرفوعة بعد." : "No documents uploaded yet.")</p>
+                    </div>
+                </div>
+
+                <div id="warningBox" class="bg-amber-50 border-r-4 border-amber-400 p-4 mb-4 flex items-center gap-3 hidden">
+                    <i class="fa-solid fa-triangle-exclamation text-amber-500"></i>
+                    <p id="warningText" class="text-sm text-amber-800 font-bold"></p>
+                </div>
+
+                <div class="flex gap-4 pt-4 border-t border-gray-100">
+                    <a href="@(currentSectionIndex > 0 ? Url.Action("Tool", new { clientId = clientId, sessionId = sessionId, currentSectionIndex = currentSectionIndex - 1 }) : "#")"
+                       class="nav-link-section flex-1 border-2 border-gray-200 text-gray-700 py-2 rounded-lg font-bold text-center hover:bg-gray-50 transition-all flex items-center justify-center gap-2
+                       @(currentSectionIndex == 0 ? "opacity-50 cursor-not-allowed pointer-events-none" : "")">
+                        <i class="fa-solid @(isArabic ? "fa-arrow-right" : "fa-arrow-left")"></i>
+                        @(isArabic ? "السابق" : "Previous")
+                    </a>
+
+                    <button type="submit" id="submitBtn" disabled
+                            class="flex-1 py-2 rounded-lg font-bold shadow-md transition-all flex items-center justify-center gap-2 bg-gray-300 text-gray-500 cursor-not-allowed">
+                        @if (isLast)
+                        {
+                            <span id="btnText">@(isArabic ? "حفظ وإنهاء الفحص" : "Save & Finish Screening")</span>
+                            <i class="fa-solid fa-paper-plane"></i>
+                        }
+                        else
+                        {
+                            <span>@(isArabic ? "حفظ والتالي" : "Save & Next")</span>
+                            <i class="fa-solid @(isArabic ? "fa-arrow-left" : "fa-arrow-right")"></i>
+                        }
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    .btn-active {
+        background: #0ea5e9 !important;
+        color: white !important;
+        cursor: pointer !important;
+    }
+
+    .saving-mode {
+        opacity: 0.6;
+        pointer-events: none;
+    }
+</style>
+
+@* (موديل 6 — اكتشاف إضافي مع تصحيح ذاتي): كانت هذه الصفحة تُحمِّل jQuery من CDN خارجي منفصل
+   (cdnjs.cloudflare.com) رغم أن jQuery محمّل أصلاً محليًا عبر _Layout.cshtml. حاولت أول مرة حذف
+   هذا السطر بالكامل بافتراض أن نسخة الـ Layout كافية — لكن تبيّن أن سكربتات هذه الصفحة غير ملفوفة
+   بـ @@section Scripts، فهي تُصيَّر ضمن RenderBody() الذي يسبق سطر تحميل jQuery بالـ Layout (المتأخر
+   عمدًا بعد RenderBody لتفادي حجب العرض) — حذف السطر كان سيكسر الصفحة بالكامل (`$ is not defined`).
+   الإصلاح الآمن: الإبقاء على تحميل jQuery هنا كما كان (بترتيبه نفسه)، لكن من الملف المحلي المتوفر
+   أصلاً بدل CDN خارجي. SweetAlert2 استُضيفت محليًا (npm) بدل jsdelivr. *@
+<script src="~/lib/jquery/dist/jquery.min.js" asp-append-version="true"></script>
+<script src="~/lib/sweetalert2/sweetalert2.all.min.js" asp-append-version="true"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const submitBtn = document.getElementById("submitBtn");
+        const warningBox = document.getElementById("warningBox");
+        const warningText = document.getElementById("warningText");
+        const isLastSection = @isLast.ToString().ToLower();
+        const isArabic = @isArabic.ToString().ToLower();
+        const totalSections = @totalSections;
+
+        const radioGroups = new Set();
+        document.querySelectorAll('.option-radio').forEach(radio => { radioGroups.add(radio.name); });
+
+        function validateForm() {
+            let sectionAnswered = true;
+            radioGroups.forEach(groupName => {
+                if (!document.querySelector(`input[name="${groupName}"]:checked`)) sectionAnswered = false;
+            });
+
+            let canFinish = sectionAnswered;
+
+            if (isLastSection && sectionAnswered) {
+                const completedCount = @completedSections.Count;
+                if (completedCount < totalSections - 1) {
+                    canFinish = false;
+                    warningText.innerText = isArabic ?
+                        "لا يمكن إنهاء الفحص. يرجى العودة وإكمال الأقسام السابقة المفقودة أولاً." :
+                        "Cannot finish. Please complete missing previous sections.";
+                    warningBox.classList.remove("hidden");
+                } else {
+                    warningBox.classList.add("hidden");
+                }
+            } else if (!sectionAnswered) {
+                if(isLastSection) {
+                    warningText.innerText = isArabic ?
+                        "يرجى الإجابة على كافة الأسئلة في هذا القسم لتفعيل زر الإنهاء." :
+                        "Please answer all questions in this section to enable finish button.";
+                    warningBox.classList.remove("hidden");
+                }
+            } else {
+                 warningBox.classList.add("hidden");
+            }
+
+            if (canFinish) {
+                submitBtn.disabled = false;
+                submitBtn.classList.add("btn-active");
+                submitBtn.classList.remove("bg-gray-300", "text-gray-500", "cursor-not-allowed");
+            } else {
+                submitBtn.disabled = true;
+                submitBtn.classList.remove("btn-active");
+                submitBtn.classList.add("bg-gray-300", "text-gray-500", "cursor-not-allowed");
+            }
+        }
+
+        window.uploadSectionDocument = function(input, sId, secId) {
+            if (!input.files.length) return;
+            const formData = new FormData();
+            formData.append("sessionId", sId);
+            formData.append("sectionId", secId);
+            formData.append("document", input.files[0]);
+            formData.append("__RequestVerificationToken", document.querySelector('input[name="__RequestVerificationToken"]').value);
+
+            document.getElementById('uploadSpinner').classList.remove('hidden');
+
+            $.ajax({
+                url: '@Url.Action("UploadDocument", "Screening")',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(res) {
+                    if(res.success) {
+                        // Re-render encoded filenames and authorized links on the server.
+                        window.location.reload();
+                    } else {
+                        Swal.fire('Error', res.message || 'Upload failed', 'error');
+                    }
+                },
+                error: () => Swal.fire('Error', isArabic ? 'فشل الرفع' : 'Upload Failed', 'error'),
+                complete: () => {
+                    document.getElementById('uploadSpinner').classList.add('hidden');
+                    input.value = "";
+                }
+            });
+        };
+
+        window.deleteDocument = function(docId) {
+            Swal.fire({
+                title: isArabic ? 'حذف الملف؟' : 'Delete File?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#f43f5e',
+                confirmButtonText: isArabic ? 'نعم، احذف' : 'Yes, delete',
+                cancelButtonText: isArabic ? 'إلغاء' : 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: '@Url.Action("DeleteDocument", "Screening")',
+                        type: 'POST',
+                        data: {
+                            documentId: docId,
+                            __RequestVerificationToken: document.querySelector('input[name="__RequestVerificationToken"]').value
+                        },
+                        success: function(res) {
+                            if(res.success) {
+                                $(`#doc-card-${docId}`).fadeOut(300, function() {
+                                    $(this).remove();
+                                    if(document.getElementById('uploadedFilesList').children.length === 0) {
+                                        document.getElementById('noFilesMsg').classList.remove('hidden');
+                                    }
+                                });
+                            }
+                        }
+                    });
+                }
+            });
+        };
+
+        $('.nav-link-section').on('click', function (e) {
+            e.preventDefault();
+            const targetUrl = $(this).attr('href');
+            if (targetUrl === "#") return;
+            $('body').addClass('saving-mode');
+            $.ajax({
+                url: '@Url.Action("ProcessSection", "Screening")',
+                type: 'POST',
+                data: $('#screeningForm').serialize(),
+                success: function () { window.location.href = targetUrl; },
+                error: function () {
+                    alert(isArabic ? "خطأ في الاتصال بالسيرفر" : "Server connection error");
+                    $('body').removeClass('saving-mode');
+                }
+            });
+        });
+
+        document.querySelectorAll('.option-radio').forEach(radio => { radio.addEventListener('change', validateForm); });
+        validateForm();
+    });
+</script>

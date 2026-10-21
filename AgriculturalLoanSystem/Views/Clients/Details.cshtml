@@ -1,0 +1,362 @@
+@model AgriculturalLoanSystem.Models.ViewModels.ClientDetailsViewModel
+@using AgriculturalLoanSystem.Data.Enums
+
+@{
+    var isArabic = System.Threading.Thread.CurrentThread.CurrentCulture.Name.StartsWith("ar");
+    ViewData["Title"] = isArabic ? "تفاصيل العميل" : "Client Details";
+
+    bool isStaff = User.IsInRole("Admin") || User.IsInRole("Employee");
+
+         var provinceMap = new Dictionary<string, string> {
+        { "عمان", "Amman" }, { "إربد", "Irbid" }, { "الزرقاء", "Zarqa" }, { "المفرق", "Mafraq" },
+        { "عجلون", "Ajloun" }, { "جرش", "Jerash" }, { "مأدبا", "Madaba" }, { "البلقاء", "Balqa" },
+        { "الكرك", "Karak" }, { "الطفيلة", "Tafilah" }, { "معان", "Ma'an" }, { "العقبة", "Aqaba" }
+    };
+
+         var loanStatusMap = ViewBag.LoanStatusMap as Dictionary<int, LoanApplicationStatus>
+                        ?? new Dictionary<int, LoanApplicationStatus>();
+
+         string GetRecommendationText(Recommendation? rec)
+    {
+        if (rec == null) return isArabic ? "---" : "---";
+        switch (rec)
+        {
+            case Recommendation.Eligible: return isArabic ? "مؤهل للتمويل" : "Eligible";
+            case Recommendation.EligibleWithConditions: return isArabic ? "مؤهل بشروط" : "Eligible w/ Conditions";
+            case Recommendation.NotEligible: return isArabic ? "غير مؤهل" : "Not Eligible";
+            default: return rec.ToString() ?? string.Empty;
+        }
+    }
+}
+
+<div class="container py-8" dir="@(isArabic ? "rtl" : "ltr")">
+
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="bg-green-100 border-r-4 border-green-500 text-green-700 p-4 mb-6 rounded shadow-sm">
+            <p class="font-bold">@TempData["SuccessMessage"]</p>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="bg-red-100 border-r-4 border-red-500 text-red-700 p-4 mb-6 rounded shadow-sm">
+            <p class="font-bold">@TempData["ErrorMessage"]</p>
+        </div>
+    }
+
+    <div class="max-w-5xl mx-auto space-y-6">
+
+
+        <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+            <div class="bg-green-600 p-5 text-white flex justify-between items-center">
+                <h2 class="text-xl font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-id-card"></i>
+                    @(isArabic ? "ملف العميل" : "Client Profile")
+                </h2>
+                <a asp-action="EditProfile" asp-route-clientId="@Model.Id" class="px-5 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold transition-all border border-white/30">
+                    <i class="fa-solid fa-user-pen ml-1"></i> @(isArabic ? "تعديل" : "Edit")
+                </a>
+            </div>
+
+
+            <div class="p-8 grid grid-cols-1 md:grid-cols-2 gap-8 border-b bg-gray-50/50">
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-gray-400 uppercase">@(isArabic ? "الاسم العربي" : "Arabic Name")</label>
+                    <p class="text-2xl font-black text-gray-800">@(string.IsNullOrEmpty(Model.FullNameAr) ? "---" : Model.FullNameAr)</p>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-gray-400 uppercase">@(isArabic ? "الاسم الإنجليزي" : "English Name")</label>
+                    <p class="text-2xl font-black text-gray-700 font-sans">@(string.IsNullOrEmpty(Model.FullNameEn) ? "---" : Model.FullNameEn)</p>
+                </div>
+            </div>
+
+
+            <div class="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 border-b">
+                <div>
+                    <label class="text-xs font-bold text-gray-400 uppercase block mb-1">@(isArabic ? "الرقم الوطني" : "National ID")</label>
+                    <p class="font-mono text-lg font-bold text-green-700">@Model.NationalId</p>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-400 uppercase block mb-1">@(isArabic ? "رقم الهاتف" : "Phone Number")</label>
+                    <p class="text-lg font-bold text-gray-800" dir="ltr">@(string.IsNullOrEmpty(Model.PhoneNumber) ? "---" : Model.PhoneNumber)</p>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-400 uppercase block mb-1">@(isArabic ? "العمر" : "Age")</label>
+                    <p class="text-lg font-bold text-blue-600">@(Model.Age > 0 ? Model.Age : "--")</p>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-400 uppercase block mb-1">@(isArabic ? "تاريخ الميلاد" : "Date of Birth")</label>
+                    <p class="text-lg font-bold text-gray-700">@(Model.DateOfBirth?.ToString("yyyy-MM-dd") ?? "---")</p>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+            <h3 class="text-xl font-bold mb-6 text-gray-800 flex items-center gap-2">
+                <i class="fa-solid fa-leaf text-green-600"></i>
+                @(isArabic ? "نتائج أداة الفحص (CLIMATE)" : "Climate Screening Results")
+            </h3>
+
+            @if (Model.ScreeningSessions != null && Model.ScreeningSessions.Any())
+            {
+                <div class="overflow-x-auto border border-gray-50 rounded-xl">
+                    <table class="w-full text-sm @(isArabic ? "text-right" : "text-left")">
+                        <thead>
+                            <tr class="bg-gray-50 text-gray-500 border-b">
+                                <th class="p-4 w-16">#</th>
+                                <th class="p-4">@(isArabic ? "تاريخ الفحص" : "Date")</th>
+                                <th class="p-4">@(isArabic ? "التوصية" : "Recommendation")</th>
+                                <th class="p-4 text-center">@(isArabic ? "التقرير" : "Report")</th>
+                                <th class="p-4 text-center">@(isArabic ? "الإجراء" : "Action")</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-50">
+                            @{
+                                int displayId = 1;
+                            }
+                            @foreach (var session in Model.ScreeningSessions)
+                            {
+                                var isCompleted = session.SessionStatus == SessionStatus.Completed;
+                                var isEligible = session.Recommendation == Recommendation.Eligible;
+
+                                                                 bool hasLoan = loanStatusMap.ContainsKey(session.Id);
+                                var loanStatus = hasLoan ? loanStatusMap[session.Id] : (LoanApplicationStatus?)null;
+
+                                <tr class="hover:bg-green-50/30 transition-all">
+                                    <td class="p-4 font-bold text-gray-400">@displayId</td>
+                                    <td class="p-4 font-bold text-gray-700">@(session.CompletedAt?.ToString("yyyy-MM-dd") ?? session.StartedAt.ToString("yyyy-MM-dd"))</td>
+                                    <td class="p-4">
+                                        @if (isCompleted)
+                                        {
+                                            var color = isEligible ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700";
+                                            if (session.Recommendation == Recommendation.EligibleWithConditions) color = "bg-amber-100 text-amber-700";
+                                            <span class="px-3 py-1 rounded-full text-xs font-bold @color">@GetRecommendationText(session.Recommendation)</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700">@(isArabic ? "قيد التنفيذ" : "In Progress")</span>
+                                        }
+                                    </td>
+
+
+                                    <td class="p-4 text-center">
+                                        @if (isCompleted)
+                                        {
+                                            <a asp-controller="Screening" asp-action="SessionReport" asp-route-sessionId="@session.Id" class="text-blue-600 hover:text-blue-800 transition" title="@(isArabic ? "عرض التقرير" : "View Report")">
+                                                <i class="fa-solid fa-file-pdf text-xl"></i>
+                                            </a>
+                                        }
+                                    </td>
+
+
+                                    <td class="p-4 text-center">
+                                        <div class="flex justify-center items-center gap-3">
+                                            @if (!isCompleted)
+                                            {
+
+                                                <a asp-controller="Screening" asp-action="Tool" asp-route-clientId="@Model.Id" asp-route-sessionId="@session.Id" class="text-amber-600 hover:text-amber-800" title="@(isArabic ? "إكمال" : "Resume")">
+                                                    <i class="fa-solid fa-circle-play text-lg"></i>
+                                                </a>
+                                                <button type="button" onclick="confirmDelete(@session.Id)" class="text-red-500 hover:text-red-700" title="@(isArabic ? "حذف" : "Delete")">
+                                                    <i class="fa-solid fa-trash-can text-lg"></i>
+                                                </button>
+                                            }
+                                            else if (isEligible)
+                                            {
+                                                if (hasLoan)
+                                                {
+
+                                                    string statusText = "";
+                                                    string iconClass = "";
+                                                    string textClass = "";
+
+                                                    switch (loanStatus)
+                                                    {
+                                                        case LoanApplicationStatus.PendingApproval:
+                                                            statusText = isArabic ? "قيد المراجعة" : "Pending";
+                                                            iconClass = "fa-hourglass-half"; textClass = "text-amber-600";
+                                                            break;
+                                                        case LoanApplicationStatus.Approved:
+                                                            statusText = isArabic ? "معتمد" : "Approved";
+                                                            iconClass = "fa-check-circle"; textClass = "text-green-600";
+                                                            break;
+                                                        case LoanApplicationStatus.Rejected:
+                                                            statusText = isArabic ? "مرفوض" : "Rejected";
+                                                            iconClass = "fa-times-circle"; textClass = "text-red-600";
+                                                            break;
+                                                        case LoanApplicationStatus.Disbursed:
+                                                            statusText = isArabic ? "تم الصرف" : "Disbursed";
+                                                            iconClass = "fa-hand-holding-dollar"; textClass = "text-blue-600";
+                                                            break;
+                                                        default:
+                                                            statusText = isArabic ? "طلب مقدم" : "Submitted";
+                                                            iconClass = "fa-file-import"; textClass = "text-gray-500";
+                                                            break;
+                                                    }
+                                                    <span class="text-[11px] font-bold @textClass flex items-center gap-1 cursor-default" title="@statusText">
+                                                        <i class="fa-solid @iconClass"></i> @statusText
+                                                    </span>
+                                                }
+                                                else
+                                                {
+
+                                                    <a asp-controller="Loans" asp-action="Calculate" asp-route-clientId="@Model.Id" asp-route-sessionId="@session.Id" class="text-green-600 hover:text-green-800 transition" title="@(isArabic ? "إنشاء قرض" : "Create Loan")">
+                                                        <i class="fa-solid fa-calculator text-xl"></i>
+                                                    </a>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <span class="text-gray-300 text-xs">@(isArabic ? "لا يوجد إجراء" : "No Action")</span>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                                displayId++;
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <p class="text-gray-400 italic text-center py-4 border border-dashed rounded-xl">@(isArabic ? "لا توجد فحوصات مناخية مسجلة" : "No climate screenings yet")</p>
+            }
+        </div>
+
+
+        @if (Model.LoanCalculations != null && Model.LoanCalculations.Any())
+        {
+            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+                <h3 class="text-xl font-bold mb-6 text-gray-800 flex items-center gap-2">
+                    <i class="fa-solid fa-sack-dollar text-green-600"></i>
+                    @(isArabic ? "طلبات القروض الجديدة" : "New Loan Applications")
+                </h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm @(isArabic ? "text-right" : "text-left")">
+                        <thead>
+                            <tr class="bg-blue-50 text-blue-900 border-b border-blue-100">
+                                <th class="p-4">@(isArabic ? "رقم الطلب" : "App ID")</th>
+                                <th class="p-4">@(isArabic ? "تاريخ الطلب" : "Date")</th>
+                                <th class="p-4">@(isArabic ? "قيمة القرض" : "Amount")</th>
+                                <th class="p-4">@(isArabic ? "القسط" : "Installment")</th>
+                                <th class="p-4">@(isArabic ? "حالة الطلب" : "Status")</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-50">
+                            @foreach (var loan in Model.LoanCalculations.OrderByDescending(l => l.CreatedAt))
+                            {
+                                <tr>
+
+                                    <td class="p-4 font-mono text-gray-500">
+
+                                        <a asp-action="ApplicationDetails" asp-controller="Loans" asp-route-loanId="@loan.Id"
+                                           class="text-blue-600 hover:text-blue-800 font-bold hover:underline">
+                                            #@loan.Id
+                                        </a>
+                                    </td>
+                                    <td class="p-4 text-gray-700">@loan.CreatedAt.ToString("yyyy-MM-dd")</td>
+                                    <td class="p-4 font-bold text-gray-900">@loan.PrincipalAmount.ToString("N0") JOD</td>
+                                    <td class="p-4 font-bold text-orange-600">@loan.InstallmentAmount.ToString("N2") JOD</td>
+                                    <td class="p-4">
+                                        @{
+                                            string statusBg = "bg-gray-100 text-gray-600";
+                                            string statusLabel = "";
+                                            switch (loan.Status)
+                                            {
+                                                case LoanApplicationStatus.PendingApproval:
+                                                    statusBg = "bg-yellow-100 text-yellow-800"; statusLabel = isArabic ? "قيد المراجعة" : "Pending";
+                                                    break;
+                                                case LoanApplicationStatus.Approved:
+                                                    statusBg = "bg-green-100 text-green-800"; statusLabel = isArabic ? "معتمد" : "Approved";
+                                                    break;
+                                                case LoanApplicationStatus.Rejected:
+                                                    statusBg = "bg-red-100 text-red-800"; statusLabel = isArabic ? "مرفوض" : "Rejected";
+                                                    break;
+                                                case LoanApplicationStatus.Disbursed:
+                                                    statusBg = "bg-blue-100 text-blue-800"; statusLabel = isArabic ? "تم الصرف" : "Disbursed";
+                                                    break;
+                                                default:
+                                                    statusBg = "bg-gray-200 text-gray-700"; statusLabel = isArabic ? "قيد الانتظار" : "Awaiting";
+                                                    break;
+                                            }
+                                        }
+                                        <span class="px-2 py-1 rounded text-[10px] font-bold @statusBg">@statusLabel</span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+
+
+        <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+            <h3 class="text-xl font-bold mb-6 text-gray-800 flex items-center gap-2">
+                <i class="fa-solid fa-history text-blue-600"></i>
+                @(isArabic ? "سجل التمويلات السابقة" : "Loan History")
+            </h3>
+            @if (Model.PreviousLoans != null && Model.PreviousLoans.Any())
+            {
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm @(isArabic ? "text-right" : "text-left")">
+                        <thead>
+                            <tr class="bg-gray-50 text-gray-500 border-b">
+                                <th class="p-4">@(isArabic ? "نوع القرض" : "Type")</th>
+                                <th class="p-4">@(isArabic ? "المبلغ" : "Amount")</th>
+                                <th class="p-4">@(isArabic ? "الحالة" : "Status")</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-50">
+                            @foreach (var loan in Model.PreviousLoans)
+                            {
+                                <tr>
+                                    <td class="p-4 font-bold">@loan.LoanType</td>
+                                    <td class="p-4 font-mono">@loan.LoanAmount?.ToString("N0") JOD</td>
+                                    <td class="p-4 text-green-600">@loan.Status</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <p class="text-gray-400 italic text-center py-4">@(isArabic ? "لا يوجد سجل قروض تاريخي" : "No previous loans found")</p>
+            }
+        </div>
+
+
+        <div class="flex flex-col md:flex-row gap-4 pt-4">
+            @if (isStaff)
+            {
+                <a asp-action="Search" class="flex-1 bg-gray-800 text-white font-bold py-4 rounded-2xl text-center hover:bg-black transition-all">
+                    <i class="fa-solid fa-arrow-left ml-2"></i> @(isArabic ? "العودة للبحث" : "Back to Search")
+                </a>
+            }
+            <form method="post" asp-controller="Screening" asp-action="StartNewSession" asp-route-clientId="@Model.Id" class="flex-[2] bg-green-600 text-white font-bold py-4 rounded-2xl text-center hover:bg-green-700 transition-all shadow-lg shadow-green-200"><button type="submit">
+                <i class="fa-solid fa-play ml-2"></i> @(isArabic ? "بدء فحص مناخي جديد" : "Start New Climate Assessment")
+            </button></form>
+        </div>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+<script>
+    function confirmDelete(sessionId) {
+        var msg = "@Html.Raw(isArabic ? "هل أنت متأكد من حذف هذه الجلسة؟" : "Confirm delete?")";
+        if (confirm(msg)) {
+            const form = document.createElement('form');
+            form.method = 'post';
+            form.action = '@Url.Action("DeleteSession", "Screening")';
+            const sIn = document.createElement('input'); sIn.type = 'hidden'; sIn.name = 'sessionId'; sIn.value = sessionId;
+            const cIn = document.createElement('input'); cIn.type = 'hidden'; cIn.name = 'clientId'; cIn.value = "@Model.Id";
+            const tk = document.querySelector('input[name="__RequestVerificationToken"]'); if (tk) form.appendChild(tk.cloneNode());
+            form.appendChild(sIn); form.appendChild(cIn); document.body.appendChild(form); form.submit();
+        }
+    }
+</script>

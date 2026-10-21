@@ -1,0 +1,202 @@
+@model IEnumerable<AgriculturalLoanSystem.Data.Entities.Section>
+@using System.Globalization
+
+@{
+    var isArabic = CultureInfo.CurrentCulture.Name.StartsWith("ar");
+    ViewData["Title"] = isArabic ? "إدارة أقسام التقييم" : "Manage Assessment Sections";
+}
+
+<div class="p-6 md:p-10 bg-gray-50 min-h-screen" dir="@(isArabic ? "rtl" : "ltr")">
+
+
+    <div class="bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-lg rounded-3xl mb-10 overflow-hidden relative">
+        <div class="absolute top-0 right-0 p-8 opacity-20 text-9xl transform translate-x-10 -translate-y-10">
+            <i class="fa-solid fa-layer-group"></i>
+        </div>
+        <div class="max-w-7xl mx-auto px-8 py-12 relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div class="flex items-center gap-6">
+                <div class="bg-white/20 w-20 h-20 rounded-2xl flex items-center justify-center text-4xl shadow-inner backdrop-blur-sm border border-white/10">
+                    <i class="fa-solid fa-list-check"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">
+                        @(isArabic ? "أقسام أداة الفحص" : "Screening Tool Sections")
+                    </h1>
+                    <p class="text-sky-100 text-lg mt-2 font-medium opacity-90">
+                        @(isArabic ? "إدارة أوزان المخاطر وترتيب العرض" : "Manage risk weights and display order")
+                    </p>
+                </div>
+            </div>
+
+            <a asp-action="CreateSection" class="bg-white text-sky-700 px-6 py-3 rounded-xl font-bold text-sm hover:bg-sky-50 transition-all shadow-md flex items-center gap-2 active:scale-95">
+                <i class="fa-solid fa-plus"></i>
+                @(isArabic ? "إضافة قسم جديد" : "Add New Section")
+            </a>
+        </div>
+    </div>
+
+
+    <div class="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left">
+                <thead class="text-xs text-gray-500 uppercase bg-gray-50 border-b border-gray-100">
+                    <tr>
+                        <th class="px-6 py-5 text-center w-24">@(isArabic ? "الترتيب" : "Order")</th>
+
+                        <th class="px-6 py-5 text-start">@(isArabic ? "اسم القسم" : "Section Name")</th>
+                        <th class="px-6 py-5 w-1/4">@(isArabic ? "الوزن النسبي" : "Weight")</th>
+                        <th class="px-6 py-5 text-center">@(isArabic ? "الحالة" : "Status")</th>
+                        <th class="px-6 py-5 text-center">@(isArabic ? "إجراءات" : "Actions")</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50 bg-white">
+                    @foreach (var item in Model)
+                    {
+                        <tr class="hover:bg-sky-50/40 transition-colors duration-200 group">
+
+
+                            <td class="px-6 py-5 text-center align-middle">
+                                <span class="bg-gray-100 text-gray-600 px-3 py-1 rounded-lg text-xs font-mono font-bold border border-gray-200">
+                                    #@item.DisplayOrder
+                                </span>
+                            </td>
+
+
+                            <td class="px-6 py-5 align-middle">
+                                <div class="flex flex-col justify-center items-start">
+
+                                    <span class="font-black text-gray-800 text-base leading-tight">
+                                        @(isArabic? item.SectionNameAr: item.SectionNameEn)
+                                    </span>
+
+                                    <span class="text-xs text-gray-400 font-medium mt-1 font-sans" dir="ltr">
+                                        @(isArabic? item.SectionNameEn: item.SectionNameAr)
+                                    </span>
+                                </div>
+                            </td>
+
+
+                            <td class="px-6 py-5 align-middle">
+                                <div class="flex items-center gap-3">
+                                    <div class="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden shadow-inner">
+                                        <div class="bg-emerald-500 h-2 rounded-full shadow-sm" style="width: @item.Weight%"></div>
+                                    </div>
+                                    <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 min-w-[3rem] text-center">
+                                        @item.Weight%
+                                    </span>
+                                </div>
+                            </td>
+
+
+                            <td class="px-6 py-5 text-center align-middle">
+                                @if (item.IsActive)
+                                {
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-100">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span> @(isArabic ? "مفعل" : "Active")
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-red-50 text-red-600 border border-red-100">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-red-600"></span> @(isArabic ? "معطل" : "Inactive")
+                                    </span>
+                                }
+                            </td>
+
+
+                            <td class="px-6 py-5 text-center align-middle">
+                                <div class="flex items-center justify-center gap-2">
+                                    <a asp-action="EditSection" asp-route-id="@item.Id"
+                                       class="text-sky-600 hover:text-white border border-sky-200 hover:bg-sky-600 focus:ring-4 focus:outline-none focus:ring-sky-300 font-medium rounded-lg text-xs p-2 text-center inline-flex items-center transition-all duration-200 shadow-sm"
+                                       title="@(isArabic ? "تعديل" : "Edit")">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </a>
+
+                                    <form asp-action="DeleteSection" method="post" class="inline-block">
+                                        <input type="hidden" name="id" value="@item.Id" />
+                                        <button type="button"
+                                                onclick="openDeleteModal(this, '@(isArabic? item.SectionNameAr: item.SectionNameEn)')"
+                                                class="text-red-500 hover:text-white border border-red-200 hover:bg-red-500 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-xs p-2 text-center inline-flex items-center transition-all duration-200 shadow-sm"
+                                                title="@(isArabic ? "حذف" : "Delete")">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+<div id="deleteModal" class="relative z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity"></div>
+
+    <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg border-2 border-red-100">
+                <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start @(isArabic ? "flex-row-reverse text-right" : "")">
+
+                        <div class="mx-auto flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-12 sm:w-12 animate-pulse">
+                            <i class="fa-solid fa-triangle-exclamation text-red-600 text-xl"></i>
+                        </div>
+                        <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left @(isArabic ? "sm:mr-4 sm:ml-0 sm:text-right" : "")">
+                            <h3 class="text-xl font-bold leading-6 text-gray-900" id="modal-title">
+                                @(isArabic ? "حذف القسم نهائياً؟" : "Delete Section Permanently?")
+                            </h3>
+                            <div class="mt-2">
+                                <p class="text-sm text-gray-500 mb-2">
+                                    @(isArabic ? "أنت على وشك حذف القسم التالي:" : "You are about to delete:")
+                                    <span id="sectionNameSpan" class="font-black text-gray-800"></span>
+                                </p>
+
+                                <div class="bg-red-50 border-l-4 border-red-500 p-3 rounded-r-md">
+                                    <p class="text-xs text-red-700 font-bold">
+                                        <i class="fa-solid fa-skull-crossbones mr-1 ml-1"></i>
+                                        @(isArabic ? "تحذير خطير: هذا الإجراء سيقوم بحذف جميع الأسئلة المرتبطة بهذا القسم بشكل لا رجعة فيه! هل أنت متأكد تماماً؟" : "CRITICAL WARNING: This action will permanently delete ALL questions associated with this section! This cannot be undone.")
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 @(isArabic ? "sm:flex-row-reverse" : "") gap-2">
+                    <button type="button" id="confirmDeleteBtn" onclick="submitDeleteForm()"
+                            class="inline-flex w-full justify-center rounded-xl bg-red-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-red-700 sm:w-auto transition-all">
+                        @(isArabic ? "نعم، احذف القسم والأسئلة" : "Yes, Delete Everything")
+                    </button>
+                    <button type="button" onclick="closeDeleteModal()"
+                            class="mt-3 inline-flex w-full justify-center rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto transition-all">
+                        @(isArabic ? "إلغاء" : "Cancel")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    let deleteForm = null;
+
+    function openDeleteModal(btn, sectionName) {
+        deleteForm = btn.closest('form');
+        document.getElementById('sectionNameSpan').textContent = sectionName;
+        document.getElementById('deleteModal').classList.remove('hidden');
+    }
+
+    function closeDeleteModal() {
+        document.getElementById('deleteModal').classList.add('hidden');
+        deleteForm = null;
+    }
+
+    function submitDeleteForm() {
+        if (deleteForm) {
+            deleteForm.submit();
+        }
+    }
+</script>

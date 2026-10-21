@@ -1,0 +1,189 @@
+@model AgriculturalLoanSystem.Models.ViewModels.ClientSearchViewModel
+
+@{
+         var isArabic = System.Threading.Thread.CurrentThread.CurrentCulture.Name.StartsWith("ar");
+    ViewData["Title"] = isArabic ? "البحث عن العميل" : "Client Search";
+
+         var provinceMap = new Dictionary<string, string> {
+        { "عمان", "Amman" }, { "إربد", "Irbid" }, { "الزرقاء", "Zarqa" },
+        { "المفرق", "Mafraq" }, { "عجلون", "Ajloun" }, { "جرش", "Jerash" },
+        { "مأدبا", "Madaba" }, { "البلقاء", "Balqa" }, { "الكرك", "Karak" },
+        { "الطفيلة", "Tafilah" }, { "معان", "Ma'an" }, { "العقبة", "Aqaba" }
+    };
+}
+
+<div class="p-4 md:p-8" dir="@(isArabic ? "rtl" : "ltr")">
+
+    <div class="bg-gradient-to-r from-green-700 via-emerald-600 to-green-600 text-white shadow-2xl rounded-lg mb-8">
+        <div class="max-w-6xl mx-auto px-6 py-6 flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold flex items-center gap-3">
+                    <i class="fa-solid fa-wheat-awn"></i>
+                    @(isArabic ? "أداة فحص القروض الزراعية" : "Agricultural Loan Screening Tool")
+                </h1>
+                <p class="text-green-100 text-sm mt-1 @(isArabic ? "mr-8" : "ml-8")">
+                    @(isArabic ? "نظام متقدم لفحص وتقييم القروض الزراعية المقاومة للمناخ" : "Advanced System for Screening Climate-Resilient Agricultural Loans")
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-6xl mx-auto space-y-6">
+        <a asp-action="Create" class="inline-block bg-green-700 text-white rounded-lg px-5 py-3">@(isArabic ? "إضافة عميل" : "Create client")</a>
+
+
+        <div class="bg-white border border-green-200 rounded-xl p-6 shadow-sm mb-6">
+            <h2 class="text-green-800 font-bold mb-2 flex items-center gap-2">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                @(isArabic ? "البحث عن العميل" : "Search for Client")
+            </h2>
+            <p class="text-gray-500 text-sm mb-4">@(isArabic ? "ابحث عن العميل باستخدام الاسم أو الرقم الوطني" : "Search for a client using Name or National ID")</p>
+
+            <form method="get" asp-action="Search" class="relative">
+                <input type="text" name="query" id="clientSearchInput" value="@Model.SearchQuery"
+                       placeholder="@(isArabic ? "مثال: محمد أحمد أو 9876543210" : "Example: John Doe or 9876543210")"
+                       class="w-full p-4 @(isArabic ? "pr-12" : "pl-12") border-2 border-gray-100 rounded-xl focus:outline-none focus:border-green-500 text-gray-700 bg-gray-50 shadow-inner transition-all"
+                       onkeyup="filterClientsTable()" />
+
+                <button type="submit" aria-label="@(isArabic ? "بحث" : "Search")" class="absolute @(isArabic ? "left-4" : "right-4") top-4 text-green-600 hover:scale-110 transition-transform">
+                    <i class="fa-solid fa-search text-xl"></i>
+                </button>
+            </form>
+        </div>
+
+        @if (!Model.Clients.Any())
+        {
+            <p role="status" class="p-6 bg-white rounded-xl text-gray-700">@(isArabic ? "لا توجد نتائج مطابقة. جرّب بحثاً آخر أو أضف عميلاً." : "No matching clients. Try another search or create a client.")</p>
+        }
+        @if (Model.Clients.Any())
+        {
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
+                <div class="p-4 bg-green-50 border-b border-green-100 text-green-800 text-sm font-bold flex justify-between">
+                    <span>
+                        <i class="fa-solid fa-list-check ml-1"></i>
+                        @(isArabic ? "نتائج البحث:" : "Search Results:")
+                        @* (DB-07): كانت تعرض Model.Clients.Count فقط (عدد عناصر الصفحة الحالية،
+                           دومًا ≤20 الآن بعد تفعيل Pagination) — الآن توضّح "صفحة/إجمالي" بدل رقم مفرد
+                           قد يُفهم خطأً كإجمالي نتائج البحث الحقيقي. *@
+                        @(isArabic ? "صفحة" : "Page") @Model.Page @(isArabic ? "من" : "of") @Model.TotalPages
+                        (@Model.TotalCount @(isArabic ? "نتيجة إجمالاً" : "total results"))
+                    </span>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full @(isArabic ? "text-right" : "text-left")" id="clientsTable">
+                        <thead class="bg-green-100 text-green-900 font-bold">
+                            <tr>
+                                <th class="p-4">@(isArabic ? "الاسم الكامل (عربي)" : "Full Name (AR)")</th>
+                                <th class="p-4 text-center">@(isArabic ? "الملف" : "Profile")</th>
+                                <th class="p-4">@(isArabic ? "الاسم الكامل (إنجليزي)" : "Full Name (EN)")</th>
+                                <th class="p-4">@(isArabic ? "الرقم الوطني" : "National ID")</th>
+                                <th class="p-4">@(isArabic ? "الهاتف" : "Phone")</th>
+                                <th class="p-4">@(isArabic ? "المنطقة" : "Region")</th>
+                                <th class="p-4 text-center">@(isArabic ? "الإجراء" : "Action")</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            @foreach (var client in Model.Clients)
+                            {
+                                <tr class="hover:bg-green-50/50 transition duration-150 client-row">
+                                    <td class="p-4 font-bold text-gray-800 searchable">@client.FullName</td>
+                                    <td class="p-4 text-center">
+                                        <a asp-controller="Clients" asp-action="Details" asp-route-clientId="@client.Id"
+                                           class="text-blue-500 hover:text-blue-700 transition-transform hover:scale-125 inline-block">
+                                            <i class="fa-solid fa-circle-info text-2xl"></i>
+                                        </a>
+                                    </td>
+                                    <td class="p-4 text-gray-600 font-sans searchable">@client.FullNameEn</td>
+                                    <td class="p-4 text-gray-600 font-mono searchable">@client.NationalId</td>
+                                    <td class="p-4 text-gray-600" dir="ltr">@(client.PhoneNumber ?? "---")</td>
+
+                                    <td class="p-4 text-gray-600 searchable">
+                                        @if (isArabic)
+                                        {
+                                            @(client.Region ?? "غير محدد")
+                                        }
+                                        else
+                                        {
+                                            @(provinceMap.TryGetValue(client.Region ?? "", out var regionName) ? regionName : (client.Region ?? "Not Set"))
+                                        }
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <form method="post" asp-controller="Screening" asp-action="StartNewSession" asp-route-clientId="@client.Id"
+                                           class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg font-bold text-sm shadow active:scale-95 transition-all"><button type="submit">
+                                            @(isArabic ? "بدء الفحص" : "Start")
+                                        </button></form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                @* (DB-07): عناصر تصفّح صفحات جديدة، تحافظ على نص البحث الحالي عند التنقل *@
+                @if (Model.TotalPages > 1)
+                {
+                    <div class="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+                        <span class="text-xs text-gray-400 font-bold">
+                            @(isArabic ? "صفحة" : "Page") @Model.Page @(isArabic ? "من" : "of") @Model.TotalPages
+                        </span>
+                        <div class="flex gap-2">
+                            @if (Model.HasPreviousPage)
+                            {
+                                <a asp-action="Search" asp-route-query="@Model.SearchQuery" asp-route-page="@(Model.Page - 1)"
+                                   class="px-4 py-2 bg-white border border-gray-200 rounded-lg text-xs font-bold hover:bg-gray-100">
+                                    @(isArabic ? "السابق" : "Previous")
+                                </a>
+                            }
+                            @if (Model.HasNextPage)
+                            {
+                                <a asp-action="Search" asp-route-query="@Model.SearchQuery" asp-route-page="@(Model.Page + 1)"
+                                   class="px-4 py-2 bg-green-600 text-white rounded-lg text-xs font-bold hover:bg-green-700">
+                                    @(isArabic ? "التالي" : "Next")
+                                </a>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else if (!string.IsNullOrEmpty(Model.SearchQuery))
+        {
+            <div class="text-center py-12 bg-white rounded-xl border-2 border-dashed border-gray-200">
+                <i class="fa-solid fa-user-slash text-5xl text-gray-200 mb-4"></i>
+                <p class="text-gray-500 font-medium">@(isArabic ? "لم يتم العثور على أي عميل بهذا الاسم أو الرقم" : "No clients found with this name or ID")</p>
+            </div>
+        }
+
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+
+            <div class="bg-white p-8 rounded-2xl shadow-sm text-center border-b-8 border-green-500 transition-all hover:shadow-md">
+                <div class="text-5xl font-black text-green-600 mb-2">@ViewBag.TotalClients</div>
+                <div class="text-gray-400 font-bold uppercase tracking-wider text-xs">@(isArabic ? "إجمالي المسجلين" : "Total Registered")</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    function filterClientsTable() {
+        const input = document.getElementById('clientSearchInput');
+        const filter = input.value.toLowerCase();
+        const rows = document.querySelectorAll('.client-row');
+
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('.searchable');
+            let match = false;
+
+            cells.forEach(cell => {
+                if (cell.textContent.toLowerCase().includes(filter)) {
+                    match = true;
+                }
+            });
+
+            row.style.display = match ? "" : "none";
+        });
+    }
+</script>

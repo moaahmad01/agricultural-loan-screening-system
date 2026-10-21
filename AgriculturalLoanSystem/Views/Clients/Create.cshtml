@@ -1,0 +1,99 @@
+@model AgriculturalLoanSystem.Models.ViewModels.ClientCreateViewModel
+
+@{
+    var isArabic = System.Threading.Thread.CurrentThread.CurrentCulture.Name.StartsWith("ar");
+    ViewData["Title"] = isArabic ? "إضافة عميل جديد" : "Add New Client";
+
+    var provincesAr = new List<string> { "عمان", "إربد", "الزرقاء", "المفرق", "عجلون", "جرش", "مأدبا", "البلقاء", "الكرك", "الطفيلة", "معان", "العقبة" };
+    var provinceMapEn = new Dictionary<string, string> {
+        { "عمان", "Amman" }, { "إربد", "Irbid" }, { "الزرقاء", "Zarqa" }, { "المفرق", "Mafraq" },
+        { "عجلون", "Ajloun" }, { "جرش", "Jerash" }, { "مأدبا", "Madaba" }, { "البلقاء", "Balqa" },
+        { "الكرك", "Karak" }, { "الطفيلة", "Tafilah" }, { "معان", "Ma'an" }, { "العقبة", "Aqaba" }
+    };
+
+    var maxDate = DateTime.Now.AddYears(-18).ToString("yyyy-MM-dd");
+}
+
+<div class="container py-8" dir="@(isArabic ? "rtl" : "ltr")">
+    <div class="max-w-4xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100">
+
+        <div class="bg-green-600 p-6 text-white flex items-center gap-3">
+            <i class="fa-solid fa-user-plus text-3xl"></i>
+            <div>
+                <h2 class="text-2xl font-bold">@(isArabic ? "إضافة عميل جديد" : "Add New Client")</h2>
+                <p class="text-green-100 text-sm">@(isArabic ? "لتسجيل بيانات عميل لم يُنشئ حسابه بعد" : "Register a client who hasn't created their account yet")</p>
+            </div>
+        </div>
+
+        <form asp-action="Create" method="post" id="createClientForm" class="p-8 space-y-6">
+            <div asp-validation-summary="ModelOnly" class="text-red-600 text-sm font-bold mb-2"></div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">@(isArabic ? "الرقم الوطني *" : "National ID *")</label>
+                    <input asp-for="NationalId" maxlength="10" placeholder="XXXXXXXXXX"
+                           class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-green-500 focus:bg-white outline-none transition-all" required />
+                    <span asp-validation-for="NationalId" class="text-red-500 text-xs mt-1 font-bold italic"></span>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">@(isArabic ? "الاسم الكامل (بالعربية) *" : "Full Name (Arabic) *")</label>
+                    <input asp-for="FullNameAr" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-green-500 focus:bg-white outline-none transition-all" required />
+                    <span asp-validation-for="FullNameAr" class="text-red-500 text-xs mt-1 font-bold italic"></span>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">@(isArabic ? "الاسم الكامل (بالإنجليزية)" : "Full Name (English)")</label>
+                    <input asp-for="FullNameEn" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-green-500 focus:bg-white outline-none font-sans" />
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">@(isArabic ? "تاريخ الميلاد" : "Date of Birth")</label>
+                    <input asp-for="DateOfBirth" type="date" max="@maxDate" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-green-500 focus:bg-white outline-none" />
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">@(isArabic ? "رقم الهاتف" : "Phone Number")</label>
+                    <input asp-for="PhoneNumber" type="tel" maxlength="10" placeholder="07XXXXXXXX"
+                           class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-green-500 focus:bg-white outline-none" />
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">@(isArabic ? "المحافظة" : "Province")</label>
+                    <select asp-for="Region" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-green-500 focus:bg-white outline-none appearance-none">
+                        <option value="">@(isArabic ? "-- اختر المحافظة --" : "-- Select Province --")</option>
+                        @foreach (var p in provincesAr)
+                        {
+                            <option value="@p">@(isArabic ? p : provinceMapEn[p])</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">@(isArabic ? "موقع المشروع بالتفصيل" : "Detailed Location")</label>
+                    <textarea asp-for="DetailedArea" rows="3" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-green-500 focus:bg-white outline-none transition-all"
+                              placeholder="@(isArabic ? "أدخل تفاصيل إضافية (اختياري)..." : "Enter additional details (optional)...")"></textarea>
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">@(isArabic ? "العنوان" : "Address")</label>
+                    <input asp-for="Address" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-green-500 focus:bg-white outline-none" />
+                </div>
+            </div>
+
+            <div class="flex gap-4 pt-8">
+                <button type="submit" class="flex-[2] bg-green-600 text-white font-black py-4 rounded-2xl hover:bg-green-700 transition-all shadow-xl shadow-green-100 flex items-center justify-center gap-2 uppercase tracking-wider">
+                    <i class="fa-solid fa-floppy-disk"></i> @(isArabic ? "إنشاء العميل" : "Create Client")
+                </button>
+                <a asp-action="Search" class="flex-1 bg-gray-100 text-gray-500 font-bold py-4 rounded-2xl text-center hover:bg-gray-200 transition-all">
+                    @(isArabic ? "إلغاء" : "Cancel")
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

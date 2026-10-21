@@ -1,0 +1,178 @@
+@model IEnumerable<AgriculturalLoanSystem.Data.Entities.LoanCalculation>
+@using AgriculturalLoanSystem.Data.Enums
+
+@{
+    var isArabic = System.Threading.Thread.CurrentThread.CurrentCulture.Name.StartsWith("ar");
+    ViewData["Title"] = isArabic ? "مراجعة الطلبات المعلقة" : "Review Pending Loans";
+}
+
+<div class="p-6 md:p-10 bg-gray-50 min-h-screen" dir="@(isArabic ? "rtl" : "ltr")">
+
+
+    <div class="bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-lg rounded-3xl mb-10 overflow-hidden relative">
+
+        <div class="absolute top-0 right-0 p-8 opacity-20 text-9xl transform translate-x-10 -translate-y-10">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+        </div>
+
+        <div class="max-w-7xl mx-auto px-8 py-12 relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div class="flex items-center gap-6">
+
+                <div class="bg-white/20 w-20 h-20 rounded-2xl flex items-center justify-center text-4xl shadow-inner backdrop-blur-sm border border-white/10">
+                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">
+                        @(isArabic ? "طلبات بانتظار المراجعة" : "Credit Approval Queue")
+                    </h1>
+                    <p class="text-sky-100 text-lg mt-2 font-medium opacity-90">
+                        @(isArabic ? "نظام التدقيق والاعتماد النهائي للقروض الزراعية" : "Final audit and approval system for agricultural credit")
+                    </p>
+                </div>
+            </div>
+
+
+            <div class="bg-blue-900/30 px-8 py-4 rounded-2xl border border-white/10 text-center backdrop-blur-sm">
+                <p class="text-[10px] uppercase tracking-widest font-bold text-sky-200">@(isArabic ? "إجمالي الطلبات" : "Total Pending")</p>
+                <h4 class="text-3xl font-black">@Model.Count()</h4>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="max-w-7xl mx-auto">
+        @if (!Model.Any())
+        {
+
+            <div class="bg-white rounded-3xl p-32 text-center border border-gray-100 shadow-sm">
+                <div class="text-gray-200 text-8xl mb-6">
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-400">@(isArabic ? "لا توجد طلبات معلقة حالياً" : "All clear! No pending loans.")</h3>
+                <p class="text-gray-400 mt-2">@(isArabic ? "تمت معالجة جميع الطلبات السابقة بنجاح" : "All previous applications have been processed")</p>
+            </div>
+        }
+        else
+        {
+
+            <div class="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="text-xs text-gray-500 uppercase bg-gray-50 border-b border-gray-100">
+                            <tr>
+                                <th class="px-8 py-5 text-start">@(isArabic ? "تفاصيل المقترض" : "Client Details")</th>
+                                <th class="px-8 py-5 text-center">@(isArabic ? "المبلغ المقترح" : "Proposed Amount")</th>
+                                <th class="px-8 py-5 text-center">@(isArabic ? "المراجعة الفنية" : "Audit Status")</th>
+                                <th class="px-8 py-5 text-center">@(isArabic ? "اتخاذ القرار" : "Action")</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-50 bg-white">
+                            @foreach (var loan in Model)
+                            {
+                                <tr class="hover:bg-sky-50/40 transition-colors duration-200">
+
+                                    <td class="px-8 py-6 align-middle">
+                                        <div class="flex flex-col justify-center items-start">
+
+                                            <span class="font-black text-gray-800 text-base leading-tight">
+                                                @(isArabic? loan.Client.FullNameAr : loan.Client.FullNameEn)
+                                            </span>
+
+                                            <span class="text-xs text-gray-400 font-medium mt-1 font-sans italic" dir="@(isArabic ? "ltr" : "rtl")">
+                                                @(isArabic? loan.Client.FullNameEn : loan.Client.FullNameAr)
+                                            </span>
+                                            <div class="flex items-center gap-2 mt-2">
+                                                <span class="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded font-mono font-bold border border-gray-200">#@loan.Id</span>
+                                                <span class="text-[10px] text-sky-600 font-bold uppercase tracking-wider">@loan.LoanCategory</span>
+                                            </div>
+                                        </div>
+                                    </td>
+
+
+                                    <td class="px-8 py-6 text-center align-middle">
+                                        <div class="text-xl font-black text-gray-900">@loan.PrincipalAmount.ToString("N0") <span class="text-xs text-gray-400 font-medium">JOD</span></div>
+                                        <div class="text-[10px] text-blue-500 font-bold uppercase mt-1">
+                                            <i class="fa-solid fa-chart-line mr-1"></i> Rate: @loan.AnnualInterestRate%
+                                        </div>
+                                    </td>
+
+
+                                    <td class="px-8 py-6 text-center align-middle">
+                                        <span class="inline-flex items-center px-4 py-1.5 rounded-full text-[10px] font-black bg-sky-50 text-sky-700 border border-sky-100 uppercase tracking-tighter">
+                                            <i class="fa-solid fa-microscope mr-1.5 ml-1.5 opacity-50"></i> @(isArabic ? "جاهز للاعتماد" : "Audit Ready")
+                                        </span>
+                                    </td>
+
+
+                                    <td class="px-8 py-6 align-middle">
+                                        <div class="flex items-center justify-center gap-3">
+
+                                            <a asp-controller="Loans" asp-action="ApplicationDetails" asp-route-loanId="@loan.Id"
+                                               class="p-2.5 text-gray-400 hover:text-sky-600 transition-all hover:bg-sky-50 rounded-xl"
+                                               title="@(isArabic ? "عرض التفاصيل الكاملة" : "View Details")">
+                                                <i class="fa-solid fa-circle-info text-xl"></i>
+                                            </a>
+
+
+                                            <form asp-action="ApproveLoan" method="post" class="inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="loanId" value="@loan.Id" />
+                                                <button type="submit"
+                                                        class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl font-bold text-xs shadow-lg shadow-emerald-100 transition-all active:scale-95 flex items-center gap-2">
+                                                    <i class="fa-solid fa-check"></i>
+                                                    @(isArabic ? "اعتماد" : "APPROVE")
+                                                </button>
+                                            </form>
+
+
+                                            <form asp-action="RejectLoan" method="post" class="inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="loanId" value="@loan.Id" />
+                                                <button type="submit"
+                                                        class="bg-white border border-red-100 text-red-500 px-6 py-2.5 rounded-xl font-bold text-xs hover:bg-red-50 transition-all active:scale-95 flex items-center gap-2">
+                                                    <i class="fa-solid fa-xmark"></i>
+                                                    @(isArabic ? "رفض" : "REJECT")
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                @{
+                    var isArabic2 = System.Threading.Thread.CurrentThread.CurrentCulture.Name.StartsWith("ar");
+                    int totalPages = ViewBag.TotalPages;
+                    int currentPage = ViewBag.Page;
+                }
+                @if (totalPages > 1)
+                {
+                    <div class="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+                        <span class="text-xs text-gray-400 font-bold">
+                            @(isArabic2 ? "صفحة" : "Page") @currentPage @(isArabic2 ? "من" : "of") @totalPages
+                            (@ViewBag.TotalCount @(isArabic2 ? "بانتظار المراجعة" : "pending"))
+                        </span>
+                        <div class="flex gap-2">
+                            @if (currentPage > 1)
+                            {
+                                <a asp-action="PendingLoans" asp-route-page="@(currentPage - 1)"
+                                   class="px-4 py-2 bg-white border border-gray-200 rounded-lg text-xs font-bold hover:bg-gray-100">
+                                    @(isArabic2 ? "السابق" : "Previous")
+                                </a>
+                            }
+                            @if (currentPage < totalPages)
+                            {
+                                <a asp-action="PendingLoans" asp-route-page="@(currentPage + 1)"
+                                   class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700">
+                                    @(isArabic2 ? "التالي" : "Next")
+                                </a>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>

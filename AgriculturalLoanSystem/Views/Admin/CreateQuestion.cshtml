@@ -1,0 +1,160 @@
+@model AgriculturalLoanSystem.Data.Entities.Question
+
+@{
+         var isArabic = System.Threading.Thread.CurrentThread.CurrentCulture.Name.StartsWith("ar");
+    ViewData["Title"] = isArabic ? "إضافة سؤال جديد" : "Create New Question";
+}
+
+
+<div class="p-6 md:p-10 bg-gray-50 min-h-screen" dir="@(isArabic ? "rtl" : "ltr")">
+
+
+    <div class="max-w-4xl mx-auto mb-8">
+        <div class="bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-lg rounded-3xl p-8 relative overflow-hidden">
+
+            <div class="absolute top-0 right-0 p-4 opacity-10 text-8xl transform translate-x-4 -translate-y-4">
+                <i class="fa-solid fa-clipboard-question"></i>
+            </div>
+
+            <div class="relative z-10 flex items-center gap-6">
+
+                <div class="bg-white/20 w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-inner backdrop-blur-sm border border-white/10">
+                    <i class="fa-solid fa-plus"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight">
+                        @(isArabic ? "إضافة سؤال تقييم جديد" : "Create Assessment Question")
+                    </h1>
+                    <p class="text-sky-100 text-sm mt-1 font-medium opacity-90">
+                        @(isArabic ? "إعداد سؤال جديد وربطه بقسم معين مع تحديد نقاط الأهمية" : "Setup a new question, link it to a section, and define its importance points")
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="max-w-4xl mx-auto">
+        <form asp-action="CreateQuestion" class="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+            @Html.AntiForgeryToken()
+
+            <div class="p-8 space-y-8">
+
+
+                @if (!ViewData.ModelState.IsValid)
+                {
+                    <div class="bg-red-50 border border-red-200 text-red-600 rounded-xl p-4 text-sm font-bold flex items-start gap-3">
+                        <i class="fa-solid fa-triangle-exclamation mt-1"></i>
+                        <div asp-validation-summary="All" class="list-none"></div>
+                    </div>
+                }
+
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                    <div>
+                        <label asp-for="QuestionTextAr" class="block text-sm font-bold text-gray-700 mb-2">
+                            @(isArabic ? "نص السؤال (عربي)" : "Arabic Question") <span class="text-red-500">*</span>
+                        </label>
+                        <textarea asp-for="QuestionTextAr" rows="3"
+                                  class="block w-full py-3 px-4 text-sm rounded-xl border-gray-200 focus:border-sky-500 focus:ring-sky-500 shadow-sm bg-gray-50/50"
+                                  placeholder="@(isArabic ? "اكتب السؤال باللغة العربية هنا..." : "Write the question in Arabic...")"></textarea>
+                        <span asp-validation-for="QuestionTextAr" class="text-xs text-red-500 font-bold mt-1 block"></span>
+                    </div>
+
+
+                    <div>
+                        <label asp-for="QuestionTextEn" class="block text-sm font-bold text-gray-700 mb-2">
+                            @(isArabic ? "نص السؤال (إنجليزي)" : "English Question") <span class="text-red-500">*</span>
+                        </label>
+                        <textarea asp-for="QuestionTextEn" rows="3"
+                                  class="block w-full py-3 px-4 text-sm rounded-xl border-gray-200 focus:border-sky-500 focus:ring-sky-500 shadow-sm bg-gray-50/50"
+                                  placeholder="Write the question in English..."></textarea>
+                        <span asp-validation-for="QuestionTextEn" class="text-xs text-red-500 font-bold mt-1 block"></span>
+                    </div>
+                </div>
+
+                <hr class="border-gray-100" />
+
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+
+
+                    <div>
+                        <label asp-for="SectionId" class="block text-sm font-bold text-gray-700 mb-2">
+                            @(isArabic ? "القسم التابع له" : "Assigned Section") <span class="text-red-500">*</span>
+                        </label>
+                        <select asp-for="SectionId" asp-items="ViewBag.SectionId"
+                                class="block w-full py-3 px-4 text-sm rounded-xl border-gray-200 focus:border-sky-500 focus:ring-sky-500 shadow-sm bg-gray-50/50 appearance-none cursor-pointer">
+                            <option value="0" disabled selected>@(isArabic ? "-- اختر القسم --" : "-- Select Section --")</option>
+                        </select>
+                        <span asp-validation-for="SectionId" class="text-xs text-red-500 font-bold mt-1 block"></span>
+                    </div>
+
+
+                    <div class="bg-amber-50 p-5 rounded-2xl border border-amber-100 relative">
+                        <label asp-for="PointValue" class="block text-sm font-bold text-amber-800 mb-2">
+                            <i class="fa-solid fa-star mr-1 ml-1"></i> @(isArabic ? "نقاط الأهمية (1-5)" : "Point Value (1-5)")
+                        </label>
+                        <input asp-for="PointValue" type="number" min="1" max="5"
+                               class="block w-full py-3 px-4 text-sm rounded-xl border-amber-200 focus:border-amber-500 focus:ring-amber-500 shadow-sm bg-white font-bold text-amber-700 transition-all" />
+                        <span asp-validation-for="PointValue" class="text-xs text-red-500 font-bold mt-1 block"></span>
+                        <p class="text-[9px] text-amber-600 mt-2 italic leading-tight">
+                            @(isArabic ? "1: تأثير منخفض | 5: تأثير حرج جداً" : "1: Low Impact | 5: Critical Impact")
+                        </p>
+                    </div>
+
+
+                    <div>
+                        <label asp-for="DisplayOrder" class="block text-sm font-bold text-gray-700 mb-2">
+                            @(isArabic ? "ترتيب العرض" : "Display Order")
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 @(isArabic ? "right-0 pr-3" : "left-0 pl-3") flex items-center pointer-events-none text-gray-400">
+                                <i class="fa-solid fa-arrow-down-1-9"></i>
+                            </div>
+                            <input asp-for="DisplayOrder" type="number"
+                                   class="block w-full py-3 @(isArabic ? "pr-10" : "pl-10") text-sm rounded-xl border-gray-200 focus:border-sky-500 focus:ring-sky-500 shadow-sm bg-gray-50/50" />
+                        </div>
+                        <span asp-validation-for="DisplayOrder" class="text-xs text-red-500 font-bold mt-1 block"></span>
+                    </div>
+                </div>
+
+
+                <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100 flex items-center justify-between shadow-inner">
+                    <div class="flex items-center gap-4">
+                        <div class="bg-white p-3 rounded-xl shadow-sm text-sky-600 border border-sky-50">
+                            <i class="fa-solid fa-eye"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-gray-700">@(isArabic ? "حالة السؤال" : "Question Status")</p>
+                            <p class="text-[11px] text-gray-400 font-medium">@(isArabic ? "تفعيل أو تعطيل ظهور السؤال" : "Enable or disable Question visibility"))</p>
+                        </div>
+                    </div>
+
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input asp-for="IsActive" type="checkbox" class="sr-only peer" checked>
+                        <div class="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-sky-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-600"></div>
+                    </label>
+                </div>
+            </div>
+
+
+            <div class="bg-gray-50 px-8 py-6 border-t border-gray-100 flex flex-col md:flex-row gap-3 md:justify-end">
+                <a asp-action="Questions" class="w-full md:w-auto px-8 py-3 rounded-xl border border-gray-300 bg-white text-gray-700 font-bold text-sm shadow-sm hover:bg-gray-50 text-center transition-all">
+                    @(isArabic ? "إلغاء" : "Cancel")
+                </a>
+                <button type="submit" class="w-full md:w-auto px-10 py-3 rounded-xl bg-sky-600 text-white font-bold text-sm shadow-md hover:bg-sky-700 hover:shadow-lg transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-check"></i>
+                    @(isArabic ? "حفظ السؤال" : "Save Question")
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

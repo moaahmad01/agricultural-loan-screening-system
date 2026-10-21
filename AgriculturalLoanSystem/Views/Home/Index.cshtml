@@ -1,0 +1,30 @@
+@{
+    var ar = System.Globalization.CultureInfo.CurrentCulture.Name.StartsWith("ar");
+    ViewData["Title"] = ar ? "نظام القروض الزراعية" : "Agricultural Loan Screening";
+}
+<div class="max-w-5xl mx-auto p-4 md:p-8">
+    <div class="text-center my-12">
+        <i class="fa-solid fa-seedling text-green-600 text-5xl mb-6" aria-hidden="true"></i>
+        <h1 class="text-3xl md:text-5xl font-bold text-gray-900 mb-6">@(ar ? "تمويل الزراعة يبدأ بتقييم واضح" : "Agricultural lending starts with a clear assessment")</h1>
+        <p class="text-lg text-gray-600 mb-8">@(ar ? "تقييم الممارسات الزراعية، مراجعة الأهلية، وحساب جدول سداد القرض في مكان واحد." : "Evaluate climate-smart practices, review eligibility, and calculate loan repayment schedules in one place.")</p>
+        <div class="flex flex-wrap justify-center gap-4">
+            <a asp-controller="Account" asp-action="Login" class="bg-green-700 text-white font-bold py-3 px-8 rounded-xl">@(ar ? "تسجيل الدخول" : "Sign in")</a>
+            <a asp-controller="Account" asp-action="Register" class="bg-white border border-green-700 text-green-800 font-bold py-3 px-8 rounded-xl">@(ar ? "إنشاء حساب" : "Create account")</a>
+        </div>
+    </div>
+    <div class="grid md:grid-cols-3 gap-6 mb-12">
+        <section class="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
+            <h2 class="text-xl font-bold mb-3">@(ar ? "فحص زراعي" : "Agricultural screening")</h2>
+            <p class="text-gray-600">@(ar ? "أسئلة منظمة وتقييم مرجح للممارسات المناخية والبيئية." : "Structured questionnaires and weighted evaluation of climate and environmental practices.")</p>
+        </section>
+        <section class="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
+            <h2 class="text-xl font-bold mb-3">@(ar ? "حاسبة القروض" : "Loan calculations")</h2>
+            <p class="text-gray-600">@(ar ? "حساب الفائدة البسيطة والمتناقصة وعرض جدول السداد." : "Simple and reducing-balance interest with detailed repayment schedules.")</p>
+        </section>
+        <section class="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
+            <h2 class="text-xl font-bold mb-3">@(ar ? "مراجعة الطلبات" : "Application review")</h2>
+            <p class="text-gray-600">@(ar ? "إدارة العملاء ومراجعة طلبات القروض بصلاحيات محددة." : "Client records and loan application reviews with role-based access.")</p>
+        </section>
+    </div>
+    <p class="text-sm text-gray-600 text-center">@(ar ? "أداة مساعدة للتقييم، وليست قراراً ائتمانياً نهائياً." : "A screening aid, not a final credit decision.")</p>
+</div>

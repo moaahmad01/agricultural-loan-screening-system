@@ -1,0 +1,135 @@
+@model AgriculturalLoanSystem.Data.Entities.LoanCalculation
+@using AgriculturalLoanSystem.Data.Enums
+
+@{
+    var isArabic = System.Threading.Thread.CurrentThread.CurrentCulture.Name.StartsWith("ar");
+    ViewData["Title"] = isArabic ? "تفاصيل الطلب" : "Application Details";
+}
+
+<div class="container py-8" dir="@(isArabic ? "rtl" : "ltr")">
+    <div class="max-w-5xl mx-auto space-y-6">
+
+
+        <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+            <div class="bg-green-600 p-6 text-white flex justify-between items-center">
+                <div>
+                    <h2 class="text-2xl font-black flex items-center gap-3">
+                        <i class="fa-solid fa-file-invoice-dollar"></i>
+                        @(isArabic ? $"طلب قرض رقم #{Model.Id}" : $"Loan Application #{Model.Id}")
+                    </h2>
+                    <p class="text-green-50 mt-1 flex items-center gap-2">
+                        <i class="fa-solid fa-user-circle"></i>
+                        @(isArabic ? "العميل:" : "Client:") @Model.Client.FullNameAr
+                    </p>
+                </div>
+
+
+                @{
+                    var status = Model.Status;
+                    string statusTxt = isArabic ? "قيد المراجعة" : "Pending";
+                    string statusClr = "bg-amber-100 text-amber-700 border-amber-200";
+                    string icon = "fa-hourglass-half";
+
+                    if (status == LoanApplicationStatus.Approved)
+                    {
+                        statusTxt = isArabic ? "معتمد" : "Approved";
+                        statusClr = "bg-green-100 text-green-700 border-green-200";
+                        icon = "fa-check-circle";
+                    }
+                    else if (status == LoanApplicationStatus.Rejected)
+                    {
+                        statusTxt = isArabic ? "مرفوض" : "Rejected";
+                        statusClr = "bg-red-100 text-red-700 border-red-200";
+                        icon = "fa-times-circle";
+                    }
+                }
+                <div class="px-5 py-2 rounded-xl border-2 font-black text-sm flex items-center gap-2 @statusClr">
+                    <i class="fa-solid @icon"></i> @statusTxt
+                </div>
+            </div>
+
+
+            <div class="p-8 grid grid-cols-1 md:grid-cols-4 gap-6 bg-gray-50/30">
+                <div class="text-center">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">@(isArabic ? "أصل المبلغ" : "Principal")</p>
+                    <p class="text-2xl font-black text-gray-800">@Model.PrincipalAmount.ToString("N0") <span class="text-xs">JOD</span></p>
+                </div>
+                <div class="text-center">
+                    <p class="text-[10px] font-bold text-blue-400 uppercase mb-1">@(isArabic ? "إجمالي الفائدة" : "Total Interest")</p>
+                    <p class="text-2xl font-black text-blue-600">@Model.TotalInterest.ToString("N2") <span class="text-xs">JOD</span></p>
+                </div>
+                <div class="text-center">
+                    <p class="text-[10px] font-bold text-orange-400 uppercase mb-1">@(isArabic ? "القسط الدوري" : "Installment")</p>
+                    <p class="text-2xl font-black text-orange-600">@Model.InstallmentAmount.ToString("N2") <span class="text-xs">JOD</span></p>
+                </div>
+                <div class="text-center">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">@(isArabic ? "المدة" : "Duration")</p>
+                    <p class="text-2xl font-black text-gray-800">@Model.DurationMonths @(isArabic ? "شهر" : "Mo")</p>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                <label class="text-[10px] font-black text-gray-400 uppercase block mb-1">@(isArabic ? "تصنيف القرض" : "Category")</label>
+                <p class="font-bold text-gray-700">@Model.LoanCategory</p>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                <label class="text-[10px] font-black text-blue-400 uppercase block mb-1">@(isArabic ? "سعر الفائدة السنوي" : "Interest Rate")</label>
+                <p class="font-black text-blue-600">@Model.AnnualInterestRate.ToString("F2") %</p>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                <label class="text-[10px] font-black text-gray-400 uppercase block mb-1">@(isArabic ? "آلية الاحتساب" : "Interest Method")</label>
+                <p class="font-bold text-gray-700">@(Model.InterestType == InterestType.Simple ? (isArabic ? "بسيطة" : "Simple") : (isArabic ? "متناقصة" : "Reducing"))</p>
+            </div>
+        </div>
+
+
+        <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+            <div class="p-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
+                <h3 class="font-bold text-gray-700 flex items-center gap-2">
+                    <i class="fa-solid fa-list-ol text-green-600"></i>
+                    @(isArabic ? "تفاصيل جدول الأقساط" : "Installment Details")
+                </h3>
+            </div>
+            <div class="overflow-x-auto max-h-[500px] overflow-y-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-100 sticky top-0 z-10 shadow-sm">
+                        <tr class="text-gray-500 font-bold uppercase text-[10px]">
+                            <th class="p-4 text-center">#</th>
+                            <th class="p-4">@(isArabic ? "تاريخ الاستحقاق" : "Due Date")</th>
+                            <th class="p-4">@(isArabic ? "القسط" : "Installment")</th>
+                            <th class="p-4">@(isArabic ? "الأصل" : "Principal")</th>
+                            <th class="p-4">@(isArabic ? "الفائدة" : "Interest")</th>
+                            <th class="p-4">@(isArabic ? "الرصيد المتبقي" : "Balance")</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-50">
+                        @foreach (var payment in Model.PaymentSchedules.OrderBy(s => s.PaymentNumber))
+                        {
+                            <tr class="hover:bg-gray-50/80 transition-all">
+                                <td class="p-4 text-center text-gray-400 font-bold">@payment.PaymentNumber</td>
+                                <td class="p-4 text-gray-600 font-mono">@(payment.PaymentDate?.ToString("yyyy-MM-dd") ?? "---")</td>
+                                <td class="p-4 font-black text-gray-800">@payment.PaymentAmount.ToString("N2")</td>
+                                <td class="p-4 text-green-600 font-medium">@payment.PrincipalPaid.ToString("N2")</td>
+                                <td class="p-4 text-red-500 font-medium">@payment.InterestPaid.ToString("N2")</td>
+                                <td class="p-4 text-gray-400 font-mono">@payment.RemainingBalance.ToString("N2")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+
+        <div class="flex flex-col md:flex-row gap-4 pt-4 no-print">
+            <a asp-controller="Clients" asp-action="Details" asp-route-clientId="@Model.ClientId" class="flex-1 bg-gray-100 text-gray-600 font-bold py-4 rounded-2xl text-center hover:bg-gray-200 transition-all border border-gray-200">
+                <i class="fa-solid fa-arrow-left ml-2"></i> @(isArabic ? "العودة لملف العميل" : "Back to Client")
+            </a>
+            <button onclick="window.print()" class="flex-1 bg-gray-900 text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-black transition-all flex items-center justify-center gap-2">
+                <i class="fa-solid fa-print"></i> @(isArabic ? "طباعة تفاصيل الطلب" : "Print Application")
+            </button>
+        </div>
+    </div>
+</div>

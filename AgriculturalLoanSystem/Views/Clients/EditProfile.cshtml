@@ -1,0 +1,155 @@
+@model AgriculturalLoanSystem.Data.Entities.Client
+
+@{
+    var isArabic = System.Threading.Thread.CurrentThread.CurrentCulture.Name.StartsWith("ar");
+    ViewData["Title"] = isArabic ? "تعديل الملف الشخصي" : "Edit Profile";
+
+    var provincesAr = new List<string> { "عمان", "إربد", "الزرقاء", "المفرق", "عجلون", "جرش", "مأدبا", "البلقاء", "الكرك", "الطفيلة", "معان", "العقبة" };
+    var provinceMapEn = new Dictionary<string, string> {
+        { "عمان", "Amman" }, { "إربد", "Irbid" }, { "الزرقاء", "Zarqa" }, { "المفرق", "Mafraq" },
+        { "عجلون", "Ajloun" }, { "جرش", "Jerash" }, { "مأدبا", "Madaba" }, { "البلقاء", "Balqa" },
+        { "الكرك", "Karak" }, { "الطفيلة", "Tafilah" }, { "معان", "Ma'an" }, { "العقبة", "Aqaba" }
+    };
+
+    var maxDate = DateTime.Now.AddYears(-18).ToString("yyyy-MM-dd");
+}
+
+<div class="container py-8" dir="@(isArabic ? "rtl" : "ltr")">
+    <div class="max-w-4xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100">
+
+
+        <div class="bg-green-600 p-6 text-white flex items-center gap-3">
+            <i class="fa-solid fa-user-gear text-3xl"></i>
+            <div>
+                <h2 class="text-2xl font-bold">@(isArabic ? "تحديث بيانات العميل" : "Update Client Profile")</h2>
+                <p class="text-green-100 text-sm">@(isArabic ? "يرجى التأكد من دقة البيانات المدخلة" : "Please ensure all data is accurate")</p>
+            </div>
+        </div>
+
+        <form asp-action="EditProfile" method="post" enctype="multipart/form-data" id="editProfileForm" class="p-8 space-y-6">
+
+            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="ApplicationUserId" />
+            <input type="hidden" asp-for="CreatedAt" />
+
+            <div asp-validation-summary="All" role="alert" class="text-red-700"></div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+
+                <div class="md:col-span-2 bg-gray-50 p-4 rounded-2xl border border-dashed border-gray-200">
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">@(isArabic ? "الرقم الوطني (لا يمكن تعديله)" : "National ID (Read-only)")</label>
+                    <div class="flex items-center gap-2 text-xl font-black text-gray-700">
+                        <i class="fa-solid fa-id-card-clip text-green-600"></i>
+                        <input asp-for="NationalId" readonly class="bg-transparent border-none outline-none w-full cursor-not-allowed" />
+                    </div>
+                </div>
+
+
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">@(isArabic ? "الاسم الكامل (بالعربية) *" : "Full Name (Arabic) *")</label>
+                    <input asp-for="FullNameAr" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-green-500 focus:bg-white outline-none transition-all" required />
+                </div>
+
+
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">@(isArabic ? "الاسم الكامل (بالإنجليزية) *" : "Full Name (English) *")</label>
+                    <input asp-for="FullNameEn" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-green-500 focus:bg-white outline-none font-sans" required />
+                </div>
+
+
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">@(isArabic ? "تاريخ الميلاد *" : "Date of Birth *")</label>
+                    <input asp-for="DateOfBirth" type="date" max="@maxDate" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-green-500 focus:bg-white outline-none" required />
+                </div>
+
+
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">@(isArabic ? "رقم الهاتف *" : "Phone Number *")</label>
+                    <input asp-for="PhoneNumber" id="phoneInput" type="tel" maxlength="10" placeholder="07XXXXXXXX"
+                           class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-green-500 focus:bg-white outline-none" required />
+                    <span id="phoneError" class="text-red-500 text-xs mt-1 hidden font-bold italic">
+                        @(isArabic ? "يجب إدخال رقم أردني صحيح (10 أرقام)" : "Enter a valid 10-digit Jordanian number")
+                    </span>
+                </div>
+
+
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">@(isArabic ? "المحافظة *" : "Province *")</label>
+                    <select asp-for="Region" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-green-500 focus:bg-white outline-none appearance-none" required>
+                        <option value="">@(isArabic ? "-- اختر المحافظة --" : "-- Select Province --")</option>
+                        @foreach (var p in provincesAr)
+                        {
+                            <option value="@p">@(isArabic? p : provinceMapEn[p])</option>
+                        }
+                    </select>
+                </div>
+
+
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">@(isArabic ? "تحديث صورة الهوية" : "Update ID Photo")</label>
+                    <div class="flex items-center gap-4">
+                        <div class="relative flex-1">
+                            <input type="file" name="identityFile" id="identityFile" accept="image/*,.pdf" class="hidden" onchange="updateFileName(this)" />
+                            <label for="identityFile" class="flex items-center justify-between w-full p-4 border-2 border-dashed border-green-200 rounded-2xl bg-green-50 text-green-700 cursor-pointer hover:bg-green-100 transition-all">
+                                <span id="fileNameDisplay" class="truncate text-sm">@(isArabic ? "رفع ملف جديد" : "Upload new file")</span>
+                                <i class="fa-solid fa-upload"></i>
+                            </label>
+                        </div>
+
+
+                        @if (!string.IsNullOrEmpty(Model.IdentityDocumentPath))
+                        {
+                            <a asp-controller="Documents" asp-action="Identity" asp-route-clientId="@Model.Id" class="text-blue-700 underline">
+                                @(isArabic ? "تنزيل مستند الهوية" : "Download identity document")
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="pt-4">
+                <label class="block text-sm font-bold text-gray-700 mb-2">@(isArabic ? "موقع المشروع بالتفصيل" : "Detailed Location")</label>
+                <textarea asp-for="DetailedArea" rows="3" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-green-500 focus:bg-white outline-none transition-all"
+                          placeholder="@(isArabic ? "أدخل تفاصيل إضافية (اختياري)..." : "Enter additional details (optional)...")"></textarea>
+            </div>
+
+
+            <div class="flex gap-4 pt-8">
+                <button type="submit" class="flex-[2] bg-green-600 text-white font-black py-4 rounded-2xl hover:bg-green-700 transition-all shadow-xl shadow-green-100 flex items-center justify-center gap-2 uppercase tracking-wider">
+                    <i class="fa-solid fa-floppy-disk"></i> @(isArabic ? "حفظ البيانات" : "Save Profile")
+                </button>
+                <a asp-action="Details" asp-route-clientId="@Model.Id" class="flex-1 bg-gray-100 text-gray-500 font-bold py-4 rounded-2xl text-center hover:bg-gray-200 transition-all">
+                    @(isArabic ? "إلغاء" : "Cancel")
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+                 function updateFileName(input) {
+            const fileName = input.files[0] ? input.files[0].name : ( "@(isArabic ? "رفع ملف جديد" : "Upload new file")" );
+            document.getElementById('fileNameDisplay').innerText = fileName;
+        }
+
+                 document.getElementById('editProfileForm').addEventListener('submit', function (e) {
+            const phone = document.getElementById('phoneInput').value;
+            const error = document.getElementById('phoneError');
+            const phoneRegex = /^07[789]\d{7}$/;
+
+            if (!phoneRegex.test(phone)) {
+                e.preventDefault();
+                error.classList.remove('hidden');
+                document.getElementById('phoneInput').classList.add('border-red-500', 'bg-red-50');
+                window.scrollTo({ top: document.getElementById('phoneInput').offsetTop - 100, behavior: 'smooth' });
+            }
+        });
+
+                 document.getElementById('phoneInput').addEventListener('input', function (e) {
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
+    </script>
+}

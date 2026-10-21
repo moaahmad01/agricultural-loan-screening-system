@@ -1,0 +1,197 @@
+@model AgriculturalLoanSystem.Models.ViewModels.AuditLogsViewModel
+@using System.Text.Json
+
+@{
+    var isArabic = System.Threading.Thread.CurrentThread.CurrentCulture.Name.StartsWith("ar");
+    ViewData["Title"] = isArabic ? "سجلات الرقابة" : "Audit Logs";
+}
+
+<div class="p-6 md:p-10 bg-gray-50 min-h-screen" dir="@(isArabic ? "rtl" : "ltr")">
+
+
+    <div class="bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-lg rounded-3xl mb-10 overflow-hidden relative">
+        <div class="absolute top-0 right-0 p-8 opacity-10 text-9xl transform translate-x-12 -translate-y-12">
+            <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <div class="max-w-7xl mx-auto px-8 py-10 relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div class="flex items-center gap-6">
+                <div class="bg-white/20 w-20 h-20 rounded-2xl flex items-center justify-center text-4xl shadow-inner backdrop-blur-sm border border-white/10">
+                    <i class="fa-solid fa-list-check"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-black tracking-tight">
+                        @(isArabic ? "سجل الرقابة والأمان" : "Security & Audit Logs")
+                    </h1>
+                    <p class="text-sky-100 text-lg mt-2 font-medium opacity-90">
+                        @(isArabic ? "مراقبة التغييرات في بيانات القروض والعملاء" : "Monitoring changes in loan and client data")
+                    </p>
+                </div>
+            </div>
+            <div class="bg-white/10 px-8 py-4 rounded-2xl backdrop-blur-sm border border-white/20 text-center min-w-[150px]">
+                @* (DB-07): العداد الآن يعكس إجمالي السجلات المطابقة للفلتر الحالي، وليس فقط عدد
+                   السجلات المعروضة بالصفحة الحالية (كان "آخر 100 سجل" ثابتة دومًا سابقًا). *@
+                <p class="text-[10px] uppercase font-bold text-sky-200">@(isArabic ? "إجمالي السجلات المطابقة" : "Total Matching Logs")</p>
+                <p class="text-3xl font-black">@Model.TotalCount</p>
+            </div>
+        </div>
+    </div>
+
+    @* (DB-07): نموذج فلترة جديد بالتاريخ/المستخدم/اسم الكيان *@
+    <div class="max-w-7xl mx-auto mb-6">
+        <form method="get" class="bg-white rounded-2xl shadow border border-gray-100 p-6 flex flex-wrap gap-4 items-end">
+            <div>
+                <label class="block text-xs font-bold text-gray-500 mb-1">@(isArabic ? "من تاريخ" : "From")</label>
+                <input type="date" name="fromDate" value="@(Model.FromDate?.ToString("yyyy-MM-dd"))" class="p-2 border border-gray-200 rounded-lg text-sm" />
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-500 mb-1">@(isArabic ? "إلى تاريخ" : "To")</label>
+                <input type="date" name="toDate" value="@(Model.ToDate?.ToString("yyyy-MM-dd"))" class="p-2 border border-gray-200 rounded-lg text-sm" />
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-500 mb-1">@(isArabic ? "اسم الكيان" : "Entity Name")</label>
+                <input type="text" name="entityName" value="@Model.EntityName" placeholder="Client, LoanCalculation..." class="p-2 border border-gray-200 rounded-lg text-sm" />
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-500 mb-1">@(isArabic ? "معرّف المستخدم" : "User ID")</label>
+                <input type="text" name="userId" value="@Model.UserId" class="p-2 border border-gray-200 rounded-lg text-sm w-40" />
+            </div>
+            <button type="submit" class="bg-sky-600 text-white font-bold px-6 py-2 rounded-lg text-sm hover:bg-sky-700">
+                @(isArabic ? "تصفية" : "Filter")
+            </button>
+            <a asp-action="AuditLogs" class="text-gray-400 text-sm font-bold hover:text-gray-600">@(isArabic ? "إعادة تعيين" : "Reset")</a>
+        </form>
+    </div>
+
+
+    <div class="max-w-7xl mx-auto">
+        <div class="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left">
+                    <thead class="text-xs text-gray-500 uppercase bg-gray-50 border-b border-gray-100">
+                        <tr>
+                            <th class="px-8 py-5 text-start w-48">@(isArabic ? "التاريخ والوقت" : "Timestamp")</th>
+                            <th class="px-8 py-5 text-start">@(isArabic ? "المسؤول" : "Admin")</th>
+                            <th class="px-8 py-5 text-center">@(isArabic ? "العملية" : "Action")</th>
+                            <th class="px-8 py-5 text-start">@(isArabic ? "الكيان المعدل" : "Entity")</th>
+                            <th class="px-8 py-5 text-start">@(isArabic ? "التغييرات التفصيلية" : "Detected Changes")</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-50 bg-white">
+                        @foreach (var log in Model.Items)
+                        {
+                            <tr class="hover:bg-sky-50/30 transition-colors duration-200 group">
+
+                                <td class="px-8 py-6 align-middle font-mono text-[11px] text-gray-500">
+                                    <div class="flex flex-col">
+                                        <span class="font-bold text-gray-700">@log.Timestamp.ToLocalTime().ToString("yyyy-MM-dd")</span>
+                                        <span>@log.Timestamp.ToLocalTime().ToString("HH:mm:ss")</span>
+                                    </div>
+                                </td>
+
+
+                                <td class="px-8 py-6 align-middle">
+                                    <div class="flex items-center gap-3">
+                                        @if (log.UserName == "System" || string.IsNullOrEmpty(log.UserName))
+                                        {
+                                            <div class="w-8 h-8 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center text-xs">
+                                                <i class="fa-solid fa-robot"></i>
+                                            </div>
+                                            <span class="text-gray-400 font-bold">System</span>
+                                        }
+                                        else
+                                        {
+                                            <div class="w-8 h-8 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center text-xs">
+                                                <i class="fa-solid fa-user-shield"></i>
+                                            </div>
+                                            <div class="flex flex-col">
+                                                <span class="font-bold text-gray-800">@log.UserName</span>
+                                                <span class="text-[9px] text-gray-400">@log.UserId</span>
+                                            </div>
+                                        }
+                                    </div>
+                                </td>
+
+
+                                <td class="px-8 py-6 text-center align-middle">
+                                    @{
+                                        var badgeColor = log.Action switch
+                                        {
+                                            "Added" => "bg-emerald-50 text-emerald-600 border-emerald-100",
+                                            "Modified" => "bg-amber-50 text-amber-600 border-amber-100",
+                                            "Deleted" => "bg-red-50 text-red-600 border-red-100",
+                                            _ => "bg-sky-50 text-sky-600 border-sky-100"
+                                        };
+                                    }
+                                    <span class="inline-flex items-center px-3 py-1 rounded-lg text-[10px] font-black border @badgeColor uppercase">
+                                        @log.Action
+                                    </span>
+                                </td>
+
+
+                                <td class="px-8 py-6 align-middle">
+                                    <div class="flex flex-col">
+                                        <span class="font-bold text-sky-700">@log.EntityName</span>
+                                        <span class="text-[10px] text-gray-400 font-mono">ID: @log.EntityId</span>
+                                    </div>
+                                </td>
+
+
+                                <td class="px-8 py-6 align-middle">
+                                    @if (!string.IsNullOrEmpty(log.Changes) && log.Changes != "[]")
+                                    {
+                                        try
+                                        {
+                                            var changes = JsonSerializer.Deserialize<List<JsonElement>>(log.Changes) ?? new List<JsonElement>();
+                                            <div class="flex flex-col gap-1.5">
+                                                @foreach (var change in changes)
+                                                {
+                                                    <div class="text-[11px] leading-tight">
+                                                        <span class="font-bold text-gray-600">@change.GetProperty("Name"):</span>
+                                                        <span class="text-red-400 line-through mx-1">@change.GetProperty("OriginalValue")</span>
+                                                        <i class="fa-solid fa-arrow-right text-[8px] text-gray-300"></i>
+                                                        <span class="text-emerald-600 font-bold mx-1">@change.GetProperty("CurrentValue")</span>
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                        catch
+                                        {
+                                            <span class="text-[10px] text-gray-400 italic">@log.Changes</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-gray-300 text-[10px]">--- @(isArabic ? "لا توجد حقول معدلة" : "No modified fields") ---</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @* (DB-07): عناصر تصفّح الصفحات، تحافظ على الفلاتر الحالية عند التنقل *@
+            <div class="flex items-center justify-between px-8 py-5 border-t border-gray-100 bg-gray-50/50">
+                <span class="text-xs text-gray-400 font-bold">
+                    @(isArabic ? "صفحة" : "Page") @Model.Page @(isArabic ? "من" : "of") @Model.TotalPages
+                </span>
+                <div class="flex gap-2">
+                    @if (Model.HasPreviousPage)
+                    {
+                        <a asp-action="AuditLogs" asp-route-page="@(Model.Page - 1)" asp-route-fromDate="@Model.FromDate" asp-route-toDate="@Model.ToDate" asp-route-userId="@Model.UserId" asp-route-entityName="@Model.EntityName"
+                           class="px-4 py-2 bg-white border border-gray-200 rounded-lg text-xs font-bold hover:bg-gray-100">
+                            @(isArabic ? "السابق" : "Previous")
+                        </a>
+                    }
+                    @if (Model.HasNextPage)
+                    {
+                        <a asp-action="AuditLogs" asp-route-page="@(Model.Page + 1)" asp-route-fromDate="@Model.FromDate" asp-route-toDate="@Model.ToDate" asp-route-userId="@Model.UserId" asp-route-entityName="@Model.EntityName"
+                           class="px-4 py-2 bg-sky-600 text-white rounded-lg text-xs font-bold hover:bg-sky-700">
+                            @(isArabic ? "التالي" : "Next")
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
