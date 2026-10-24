@@ -68,9 +68,18 @@ namespace AgriculturalLoanSystem.Services.Implementations
 
         public async Task CreateSectionAsync(Section section)
         {
-            section.CreatedAt = DateTime.UtcNow;
-            section.UpdatedAt = DateTime.UtcNow;
-            _context.Sections.Add(section);
+            // Persist only creation fields, never a caller-supplied navigation graph or identity.
+            var entity = new Section
+            {
+                SectionNameAr = section.SectionNameAr,
+                SectionNameEn = section.SectionNameEn,
+                Weight = section.Weight,
+                DisplayOrder = section.DisplayOrder,
+                IsActive = section.IsActive,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            _context.Sections.Add(entity);
             await _context.SaveChangesAsync();
             _cache.Remove(CacheKeys.ActiveSectionsWithQuestions);
         }
@@ -145,9 +154,22 @@ namespace AgriculturalLoanSystem.Services.Implementations
 
         public async Task CreateQuestionAsync(Question question)
         {
-            question.CreatedAt = DateTime.UtcNow;
-            question.UpdatedAt = DateTime.UtcNow;
-            _context.Questions.Add(question);
+            if (question.SectionId <= 0 || !await _context.Sections.AnyAsync(s => s.Id == question.SectionId))
+                throw new ArgumentException("The selected section does not exist.", nameof(question.SectionId));
+
+            // Use the validated foreign key; the submitted Section object must never be attached.
+            var entity = new Question
+            {
+                SectionId = question.SectionId,
+                QuestionTextAr = question.QuestionTextAr,
+                QuestionTextEn = question.QuestionTextEn,
+                PointValue = question.PointValue,
+                DisplayOrder = question.DisplayOrder,
+                IsActive = question.IsActive,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            _context.Questions.Add(entity);
             await _context.SaveChangesAsync();
             _cache.Remove(CacheKeys.ActiveSectionsWithQuestions);
         }

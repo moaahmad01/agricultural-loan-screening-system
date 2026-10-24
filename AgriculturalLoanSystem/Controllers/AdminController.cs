@@ -80,7 +80,8 @@ namespace AgriculturalLoanSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateSection(Section section)
+        public async Task<IActionResult> CreateSection(
+            [Bind("SectionNameAr,SectionNameEn,Weight,DisplayOrder,IsActive")] Section section)
         {
             var sections = await _adminService.GetAllSectionsAsync();
 
@@ -197,7 +198,8 @@ namespace AgriculturalLoanSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateQuestion(Question question)
+        public async Task<IActionResult> CreateQuestion(
+            [Bind("SectionId,QuestionTextAr,QuestionTextEn,PointValue,DisplayOrder,IsActive")] Question question)
 
         {
             if (question.PointValue < 1 || question.PointValue > 5)
@@ -206,7 +208,7 @@ namespace AgriculturalLoanSystem.Controllers
                     ? "يجب أن تكون قيمة الأهمية بين 1 و 5 فقط."
                     : "Value points must be between 1 and 5.");
             }
-            if (question.SectionId <= 0)
+            if (question.SectionId <= 0 || await _adminService.GetSectionByIdAsync(question.SectionId) == null)
             {
                 ModelState.AddModelError("SectionId", IsArabic ? "يرجى اختيار القسم الذي ينتمي إليه السؤال." : "Please select the section for this question.");
             }
