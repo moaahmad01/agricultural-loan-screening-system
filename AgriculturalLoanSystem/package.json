@@ -7,6 +7,9 @@
     "build:css": "node scripts/copy-vendor.mjs && tailwindcss -i ./wwwroot/css/tailwind-input.css -o ./wwwroot/css/tailwind-output.css --minify",
     "watch:css": "tailwindcss -i ./wwwroot/css/tailwind-input.css -o ./wwwroot/css/tailwind-output.css --watch"
   },
+  "overrides": {
+    "postcss-selector-parser": "7.1.6"
+  },
   "devDependencies": {
     "tailwindcss": "3.4.19"
   },
