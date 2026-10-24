@@ -171,7 +171,7 @@ jobs:
           runsql() {
             docker exec -e CI01B_SQL="$1" "$dbid" sh -c '/opt/mssql-tools18/bin/sqlcmd -b -C -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -h -1 -W -Q "$CI01B_SQL"' | tr -d '[:space:]'
           }
-          tables="$(runsql "SET NOCOUNT ON; SELECT COUNT(*) FROM sys.tables WHERE name IN ('AuditLogs', 'Clients', 'PreviousLoans', 'Sections', 'Questions', 'ScreeningSessions', 'ScreeningAnswers', 'LoanCalculations', 'PaymentSchedules', 'InterestRates', 'ScreeningDocuments')")"
+          tables="$(runsql "SET NOCOUNT ON; SELECT COUNT(*) FROM LoansDB.sys.tables WHERE name IN ('AuditLogs', 'Clients', 'PreviousLoans', 'Sections', 'Questions', 'ScreeningSessions', 'ScreeningAnswers', 'LoanCalculations', 'PaymentSchedules', 'InterestRates', 'ScreeningDocuments')")"
           migrations="$(runsql "SET NOCOUNT ON; SELECT COUNT(*) FROM LoansDB.dbo.__EFMigrationsHistory")"
           sections="$(runsql "SET NOCOUNT ON; SELECT COUNT(*) FROM LoansDB.dbo.Sections")"
           echo "app tables found: ${tables}"
