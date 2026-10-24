@@ -235,7 +235,7 @@ namespace AgriculturalLoanSystem.Tests.Services
 
             public string? Content(string? contentPath) => contentPath;
 
-            public bool IsLocalUrl(string url) => true;
+            public bool IsLocalUrl(string? url) => true;
 
             public string? Link(string? routeName, object? values) => null;
 
