@@ -44,6 +44,14 @@ namespace AgriculturalLoanSystem.Services.Implementations
             decimal authoritativeAnnualInterestRate,
             LoanCalculationResultDto calculationResult)
         {
+            // (FIN-01C — Option A): حارس دفاعي في حدود الحفظ الداخلية — أي نداء لا يمرّ
+            // عبر ModelState في MVC يُرفض هنا أيضًا قبل إضافة أي كيان أو SaveChanges،
+            // فلا يمكن تخزين أصل قرض غير قابل للتمثيل بدقة منزلتين (يمنع فرق 0.01
+            // دينار المخزَّن بين LoanCalculations و PaymentSchedules). الرسالة هي موحّد
+            // LoanPrincipalPrecision ورسالتها العربية آمنة للعرض المباشر (CQ-04).
+            if (!LoanPrincipalPrecision.IsRepresentableAtTwoDecimals(input.PrincipalAmount))
+                throw new ArgumentException(LoanPrincipalPrecision.ErrorMessage);
+
             if (sessionId.HasValue && !await _context.ScreeningSessions.AnyAsync(
                 s => s.Id == sessionId.Value && s.ClientId == clientId))
                 throw new ArgumentException("The screening session does not belong to this client.");

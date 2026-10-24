@@ -103,33 +103,83 @@ namespace AgriculturalLoanSystem.Services.Implementations
                 paymentAmount = totalRepayment / totalPayments;
             }
 
+            // ================================================================
+            // (FIN-01B — تنفيذ السياسة النقدية المعتمدة):
+            // القيم المعروضة والمحفوظة بدقة منزلتين عشريتين هي المرجع. لكل سطر:
+            // مبلغ القسط = المدين + الفائدة، ومجاميع الأسطر تساوي مجاميع الملخص،
+            // والرصيد النهائي صفرًا تمامًا، ودون أي مبالغ سالبة.
+            // الصيغ المالية والمعدلات ومنطق التواريخ وMidpointRounding.ToEven دون تغيير.
+            // ================================================================
+            decimal principalAtPrecision = Math.Round(principal, 2, MidpointRounding.ToEven);
+            decimal nominalInstallment = Math.Round(paymentAmount, 2, MidpointRounding.ToEven);
+            // إجمالي الفائدة التعاقدي مقرّبًا — يُستخدم للفائدة الثابتة فقط.
+            decimal totalInterestTarget = Math.Round(totalInterest, 2, MidpointRounding.ToEven);
+
             var schedule = new List<PaymentScheduleRowDto>();
-            decimal remainingBalance = principal;
+            decimal remainingBalance = principalAtPrecision;
             decimal accumulatedInterest = 0m;
 
             for (int i = 1; i <= totalPayments; i++)
             {
-                decimal interestPaid = 0m;
-                decimal principalPaid = 0m;
+                bool isFinal = i == totalPayments;
+                decimal interestPaid;
 
                 if (input.InterestType == InterestType.Reducing)
                 {
+                    // (FIN-01B): فائدة كل فترة تُحسب من الرصيد المُعرَض بدقة منزلتين
+                    // (وليس من رصيد غير مقرّب) — وأصل انعدام تطابق الأقساط القديمة
+                    // كان احتساب الفائدة والمدين من أرقام غير مقرّبة ثم تقريبها كل على حدة.
                     decimal ratePerPayment = annualRate / paymentsPerYear;
-                    interestPaid = remainingBalance * ratePerPayment;
-                    principalPaid = paymentAmount - interestPaid;
+                    interestPaid = Math.Round(remainingBalance * ratePerPayment, 2, MidpointRounding.ToEven);
                 }
                 else
                 {
-                    interestPaid = totalInterest / totalPayments;
-                    principalPaid = paymentAmount - interestPaid;
+                    // الفائدة الثابتة: حصة ساوية لكل قسط من إجمالي الفائدة التعاقدي.
+                    interestPaid = Math.Round(totalInterest / totalPayments, 2, MidpointRounding.ToEven);
                 }
 
-                if (i == totalPayments)
+                decimal principalPaid = isFinal ? remainingBalance : nominalInstallment - interestPaid;
+
+                // (FIN-01B): لا يُسدَّد مدين أكبر من الرصيد القائم أبدًا؛ وعند الاقتطاع
+                // يُعاد حساب مبلغ هذا القسط من مكوناته (PaymentAmount = مدين + فائدة
+                // أدناه) بدل إخفاء أي خلل بـ Math.Max كما في التنفيذ القديم.
+                if (principalPaid > remainingBalance)
                 {
-                    if (input.InterestType == InterestType.Reducing)
+                    principalPaid = remainingBalance;
+                }
+                if (principalPaid < 0m)
+                {
+                    // يصبح سالبًا فقط في الحالات التنكّرية الموثقة (قسط دوري مقرّب
+                    // أصغر من فائدة الفترة) — يُصفَّر المدين ويبقى حساب الفائدة كما هو،
+                    // ويبقى الرصيد يُسدَّد كاملًا في القسط الأخير.
+                    principalPaid = 0m;
+                }
+
+                if (isFinal && input.InterestType == InterestType.Simple)
+                {
+                    // (FIN-01B): للفائدة الثابتة: الفرق المتبقي عند تقريب حصص
+                    // الفائدة إلى منزلتين يُخصَّص للقسط الأخير — وكذلك يُخصَّص
+                    // له رصيد المدين المتبقي.
+                    interestPaid = totalInterestTarget - accumulatedInterest;
+                    if (interestPaid < 0m)
                     {
-                        principalPaid = remainingBalance;
-                        paymentAmount = principalPaid + interestPaid;
+                        // (FIN-01B): حصص الفائدة السابقة (بقرّبها) جمّعت أكثر من
+                        // الإجمالي التعاقدي المقرّب — ممكن فقط حين تكون فائدة الفترة
+                        // أقل من قرش. نمشي السنتات الزائدة إلى الوراء عبر الأسطر من
+                        // الأخير (تبقى فائدة كل سطر ≥ صفرًا) مع إعادة حساب مبلغ كل
+                        // سطر من مكوناته، فيبقى مجموع الفائدة = الإجمالي التعاقدي.
+                        decimal excess = accumulatedInterest - totalInterestTarget;
+                        for (int k = schedule.Count - 1; k >= 0 && excess > 0; k--)
+                        {
+                            var priorRow = schedule[k];
+                            if (priorRow.InterestPaid <= 0m) continue;
+                            decimal take = Math.Min(priorRow.InterestPaid, excess);
+                            priorRow.InterestPaid -= take;
+                            priorRow.PaymentAmount = priorRow.PrincipalPaid + priorRow.InterestPaid;
+                            excess -= take;
+                            accumulatedInterest -= take;
+                        }
+                        interestPaid = totalInterestTarget - accumulatedInterest;
                     }
                 }
 
@@ -145,18 +195,25 @@ namespace AgriculturalLoanSystem.Services.Implementations
                         PaymentFrequency.Biweekly => DateTime.Today.AddDays(i * 14),
                         _ => DateTime.Today.AddMonths(i * (12 / paymentsPerYear))
                     },
-                    PaymentAmount = Math.Round(paymentAmount, 2),
-                    PrincipalPaid = Math.Round(principalPaid, 2),
-                    InterestPaid = Math.Round(interestPaid, 2),
-                    RemainingBalance = Math.Max(0m, Math.Round(remainingBalance, 2))
+                    // (FIN-01B): مبلغ القسط يُشتق دائمًا من مكوناته، فيبقى القسط
+                    // متسقًا مع المدين والفائدة (خاصة عند اقتطاع المدين أو القسط الأخير).
+                    PaymentAmount = principalPaid + interestPaid,
+                    PrincipalPaid = principalPaid,
+                    InterestPaid = interestPaid,
+                    RemainingBalance = remainingBalance
                 });
             }
 
+            // (FIN-01B): مجاميع الملخص مشتقة من الجدولة النهائية نفسها — لا يمكن
+            // بعد الآن أن يخالف مجموع الأسطر المبلغ المُعلن.
+            decimal scheduleInterest = schedule.Sum(r => r.InterestPaid);
+            decimal scheduleRepayment = schedule.Sum(r => r.PaymentAmount);
+
             return new LoanCalculationResultDto
             {
-                InstallmentAmount = Math.Round(paymentAmount, 2),
-                TotalInterest = Math.Round(accumulatedInterest, 2),
-                TotalRepayment = Math.Round(principal + accumulatedInterest, 2),
+                InstallmentAmount = nominalInstallment,
+                TotalInterest = scheduleInterest,
+                TotalRepayment = scheduleRepayment,
                 Schedule = schedule
             };
         }
