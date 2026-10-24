@@ -1,9 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <!-- (موديل 7 — ج.4): net9.0 لمطابقة المشروع الرئيسي تمامًا (بيئة الإنشاء هنا كانت تحتوي SDK 10
-         فقط، لذا وُلِّد المشروع مبدئيًا كـ net10.0 ثم صُحِّح يدويًا). -->
-    <TargetFramework>net9.0</TargetFramework>
+    <!-- Match the framework used by the MVC application. -->
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
@@ -15,7 +14,7 @@
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
     <!-- لاختبارات التكامل الخفيفة على AppDbContext بلا حاجة لخادم SQL Server فعلي -->
-    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.12" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.13" />
     <!-- لعمل Mock بسيط لـ IHttpContextAccessor وغيره عند الحاجة -->
     <PackageReference Include="Moq" Version="4.20.72" />
   </ItemGroup>

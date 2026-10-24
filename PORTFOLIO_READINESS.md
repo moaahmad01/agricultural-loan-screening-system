@@ -1,5 +1,7 @@
 # Portfolio verification — October 22, 2026
 
+The October 22 results below are historical. The local .NET 10 candidate's verification is recorded separately at the end of this document.
+
 The owner confirmed the required rights to publish the project materials on October 22, 2026. No application license has been assigned. This is a source-code portfolio, not a production deployment or security certification.
 
 ## Publication review
@@ -48,3 +50,15 @@ The workflow in `.github/workflows/build-and-test.yml` restores locked dependenc
 **Agricultural Loan Screening System — C#, ASP.NET Core MVC, EF Core, SQL Server**
 
 Developed a bilingual Arabic/English loan-screening application with weighted questionnaires, repayment schedules, and role-based administration. Implemented ownership-authorized private documents, workflow validation, and database constraints; includes 64 automated tests, reproducible setup, Docker configuration, and GitHub Actions.
+
+## PLAT-01 local verification — October 24, 2026
+
+Candidate based on approved SEC-01 commit `64c3967`; pending independent review, with no commit, push, or hosted CI run during this phase.
+
+- Both projects target .NET 10; SDK 10.0.402, ASP.NET Core/runtime 10.0.13, EF Core/Identity and EF tooling 10.0.13. Existing test-tool and npm versions are unchanged.
+- SqlClient's transitive PKCS 9.0.11 dependency produced security advisories. An explicit 10.0.13 reference selects the patched servicing version; the final NuGet vulnerability query reported no affected packages.
+- Tool restore, deliberate lockfile regeneration, locked restore, and Release build passed. Build: zero warnings/errors. All 76 automated tests passed; EF reported no pending model changes. All five historical migrations remain unchanged.
+- A populated synthetic .NET 9 database was opened by .NET 10 without changes to any of 19 tables' data hashes or the SQL schema hash. Existing authentication cookies, antiforgery tokens, and private identity documents remained usable with the same content root and key storage.
+- Both fresh .NET 10 and upgraded synthetic LocalDB databases passed the existing 40 HTTP checks and 42 SEC-01 HTTP checks each. The baseline .NET 9 fixture also passed 40 checks before upgrade.
+- Docker application/migrator builds and the container EF model check passed. Ubuntu lacks `adduser`; renaming its UID/GID 1000 account preserves existing volume ownership. The final app user has no supplementary groups. A volume populated by .NET 9 retained readable document/key fixtures and allowed .NET 10 writes as non-root.
+- Full SQL Server container/Compose startup and hosted GitHub Actions were not run. Existing frontend warnings and previously disclosed business-policy/rounding limitations remain outside PLAT-01.

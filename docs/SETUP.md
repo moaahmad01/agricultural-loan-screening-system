@@ -6,7 +6,7 @@ The repository root contains `AgriculturalLoanSystem.sln`, `Dockerfile`, and `.g
 
 ## Local development
 
-Install .NET 9 SDK (`global.json` accepts newer .NET 9 feature bands), Node.js 24, and SQL Server. Windows LocalDB was used for verification. Use an isolated database such as `AgriculturalLoanPortfolio`; never point demonstration runs at production.
+Install .NET 10 SDK (`global.json` requires 10.0.402 or a later supported .NET 10 feature band), Node.js 24, and SQL Server. Windows LocalDB was used for verification. Use an isolated database such as `AgriculturalLoanPortfolio`; never point demonstration runs at production.
 
 ```powershell
 dotnet tool restore
@@ -28,6 +28,8 @@ For Linux/macOS, set `ConnectionStrings__DefaultConnection` to an accessible SQL
 First startup seeds 5 sections, 24 questions, 12 rate bands, and Admin/Employee/Citizen roles. It creates no clients. `INITIAL_ADMIN_PASSWORD` opts into the first `admin` account, subject to Identity's password policy. No password is generated or logged. Empty means no admin account. Remove the setting after bootstrap; it does not reset an existing account. Account recovery/password reset is not implemented.
 
 ## Migrations and existing databases
+
+The .NET 10 maintenance upgrade preserves all five migrations and requires no schema migration. Keep the existing database, document storage, and Data Protection keys. Preserve the content root/application identity when retaining authentication cookies. The Ubuntu-based Docker image keeps UID/GID 1000 so existing private-data volumes remain accessible; do not recreate volumes for this upgrade.
 
 Back up and test on a restored copy before upgrading a real installation. Keep existing migrations/history. Development applies migrations on startup; Production does not.
 
@@ -70,7 +72,7 @@ docker compose down
 
 SQL health gates the migrator, which gates the web service. SQL Server Express data and private documents/Data Protection keys use named volumes. `down` preserves volumes; **do not use `down -v` on data you need**. SQL/HTTP ports are loopback-only. The non-root web user owns private storage in the image. Image tags receive vendor updates; exact digests are not pinned.
 
-Compose syntax was verified. Image building, SQL container health, non-root volume permissions, and container persistence remain unverified because the Docker engine was unavailable.
+For the .NET 10 candidate, application/migrator image builds, EF tooling, and access to a private volume populated by the .NET 9 image were verified. SQL container health and full Compose application startup remain unverified. See the dated [verification record](../PORTFOLIO_READINESS.md).
 
 ## Additional verification
 

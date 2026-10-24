@@ -36,13 +36,13 @@ Capture details: [screenshots](docs/SCREENSHOTS.md).
 
 | Layer | Implementation |
 | --- | --- |
-| Web/backend | C#, ASP.NET Core 9 MVC, Razor, ASP.NET Core Identity |
-| Persistence | EF Core 9, SQL Server, versioned migrations |
+| Web/backend | C#, ASP.NET Core 10 MVC, Razor, ASP.NET Core Identity |
+| Persistence | EF Core 10, SQL Server, versioned migrations |
 | Frontend | Tailwind CSS 3, JavaScript, jQuery, local Cairo/Font Awesome/SweetAlert2 assets |
 | Tests | xUnit, Moq, EF Core InMemory; local HTTP smoke-test script |
-| Tooling | .NET 9 SDK, Node.js 24, npm/NuGet lockfiles, Docker Compose, GitHub Actions |
+| Tooling | .NET 10 SDK, Node.js 24, npm/NuGet lockfiles, Docker Compose, GitHub Actions |
 
-.NET 9 reaches end of support on **November 10, 2026**. Plan and validate a .NET 10 LTS upgrade before maintaining a public deployment beyond that date. This preparation preserves the existing major framework version. See [Microsoft's support policy](https://dotnet.microsoft.com/en-us/platform/support/policy).
+.NET 10 is an LTS release supported through **November 14, 2028**. This project uses SDK 10.0.402 and EF Core/Identity 10.0.13; keep SDK, runtime, and packages on supported servicing releases. See [Microsoft's support policy](https://dotnet.microsoft.com/en-us/platform/support/policy).
 
 ## Architecture
 
@@ -62,7 +62,7 @@ Services hold workflows and calculations; EF Core enforces relationships and uni
 
 ## Run locally
 
-Prerequisites: a .NET 9 SDK compatible with `global.json`, Node.js 24, and SQL Server (Windows LocalDB is supported). Run commands **from the repository root, beside `AgriculturalLoanSystem.sln`**.
+Prerequisites: a .NET 10 SDK compatible with `global.json` (10.0.402 or a later supported feature band), Node.js 24, and SQL Server (Windows LocalDB is supported). Run commands **from the repository root, beside `AgriculturalLoanSystem.sln`**.
 
 ```sh
 git clone https://github.com/moaahmad01/agricultural-loan-screening-system.git
@@ -98,7 +98,7 @@ docker compose config --quiet
 docker compose up --build -d
 ```
 
-Open [localhost:8080](http://localhost:8080). Compose binds SQL and HTTP to loopback, persists database/private-document/key volumes, waits for SQL health, and runs a separate migrator before the web application. This is a **local demo configuration**, using the SQL administrator login; it is not a public deployment configuration. Container execution could not be verified here because Docker's Linux engine was stopped. See [deployment prerequisites](docs/SETUP.md#deployment-prerequisites).
+Open [localhost:8080](http://localhost:8080). Compose binds SQL and HTTP to loopback, persists database/private-document/key volumes, waits for SQL health, and runs a separate migrator before the web application. This is a **local demo configuration**, using the SQL administrator login; it is not a public deployment configuration. The .NET 10 candidate passed local image-build and private-volume compatibility checks; full Compose startup remains unverified. See [deployment prerequisites](docs/SETUP.md#deployment-prerequisites).
 
 ## Demo walkthrough
 
@@ -130,9 +130,9 @@ Use it only with a local database dedicated to synthetic data. It creates accoun
 
 The final verification record is [PORTFOLIO_READINESS.md](PORTFOLIO_READINESS.md). Unit/service tests use EF InMemory and do not substitute for SQL Server constraints; local HTTP and SQL checks supplement them.
 
-Known limitations include build-time Tailwind 3 dependency advisories; the upcoming .NET support deadline; no malware scanning/storage quotas; partial localization; no automated browser suite; and domain-policy review still needed for exclusionary questions, interest-rate band gaps, and payment rounding. Historical questionnaire text/weights are not versioned. No production-readiness claim is made.
+Known limitations include build-time Tailwind 3 dependency advisories; maintaining supported .NET servicing versions; no malware scanning/storage quotas; partial localization; no automated browser suite; and domain-policy review still needed for exclusionary questions, interest-rate band gaps, and payment rounding. Historical questionnaire text/weights are not versioned. No production-readiness claim is made.
 
-Next priorities: upgrade the framework and Tailwind toolchain; replace the duplicate browser calculator with a server-backed preview; version questionnaire policy; add SQL concurrency/browser CI tests; and implement verified invitations for existing staff-created clients.
+Next priorities: maintain .NET servicing and upgrade the Tailwind toolchain; replace the duplicate browser calculator with a server-backed preview; version questionnaire policy; add SQL concurrency/browser CI tests; and implement verified invitations for existing staff-created clients.
 
 ## Security, attribution, and license
 

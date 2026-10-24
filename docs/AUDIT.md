@@ -12,4 +12,4 @@
 | Medium | Incorrect CI paths and unreproducible dependencies | Root-relative workflow, npm/NuGet locks and EF tool manifest |
 | Portfolio | Missing/overstated documentation | English README, real screenshots, explicit limitations and publication instructions |
 
-Outstanding: seven build-time npm advisories; upcoming .NET 9 support deadline; untested Docker execution; questionnaire/rate-band policy and rounding review; historical questionnaire versioning; malware scanning and storage lifecycle; automated SQL concurrency/browser coverage. No claim of production readiness. See [final evidence](../PORTFOLIO_READINESS.md).
+Outstanding: seven build-time npm advisories; ongoing .NET servicing; full Compose runtime verification; questionnaire/rate-band policy and rounding review; historical questionnaire versioning; malware scanning and storage lifecycle; automated SQL concurrency/browser coverage. No claim of production readiness. See [final evidence](../PORTFOLIO_READINESS.md).
