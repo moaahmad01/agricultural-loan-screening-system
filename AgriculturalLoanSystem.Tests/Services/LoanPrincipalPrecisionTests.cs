@@ -153,10 +153,11 @@ namespace AgriculturalLoanSystem.Tests.Services
         public void ModelValidation_PreservesPrincipalRangeAlongsidePrecisionRule()
         {
             // نطاق القرض (1..10,000,000) يبقى مفروضًا كما هو بجانب قاعدة الدقة الجديدة.
-            // ملاحظة (سلوك قائم مسبقًا غير مُعدَّل في FIN-01C): حدود [Range] المعرفة بأعداد
-            // صحيحة تجعل MVC يقارن القيمة بعد تحويلها إلى int (OperandType = Int32)،
-            // فتمرّ قيم تحت 1 مثل 0.99 سابقًا وتمرّ الآن أيضًا — تعديل ذلك خارج نطاق
-            // FIN-01C (المطلوب الحفاظ على القواعد القائمة، لا تغييرها).
+            // (VAL-01): حدود [Range] أصبحت مقارنة عشرية صريحة عبر
+            // [Range(typeof(decimal), "1", "10000000", ParseLimitsInInvariantCulture = true)]
+            // بعد أن كانت المقارنة تمرّ عبر تحويل int (OperandType = Int32) تجعل قيمًا مثل
+            // 0.99 و10,000,000.50 تعبر النطاق المقصود. الحَدان الشموليان والرسالة العربية
+            // لم يتغيرا، وتفاصيل الحدود موجودة في LoanPrincipalRangeValidationTests.
             var aboveRange = ValidateViewModel(ValidViewModel(10_000_001m));
 
             Assert.False(aboveRange.IsValid);
