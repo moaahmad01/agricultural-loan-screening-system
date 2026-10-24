@@ -34,3 +34,184 @@ jobs:
         with:
           name: test-results
           path: '**/TestResults/*.trx'
+
+  # CI-01B - docker-smoke: builds the existing Compose stack and verifies that the
+  # SQL Server container, the EF Core migrator, and the web app start together
+  # against a fresh, disposable database. HTTP smoke-test scripts belong to CI-01C
+  # and action-version upgrades to CI-01D; deliberately out of scope here.
+  docker-smoke:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 25
+    env:
+      # Unique per-run Compose project name (shell env overrides the top-level
+      # "name:" in docker-compose.yml). All containers, the network, and the named
+      # volumes of this job are namespaced and can never collide with, or clean
+      # up resources of, any other Compose project on the runner.
+      COMPOSE_PROJECT_NAME: ci01b-smoke-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Per-run disposable credentials. Never hardcoded, never printed, never
+      # uploaded. add-mask strips the values from any subsequent log output
+      # (defense against accidental exposure through tool logs).
+      - name: Generate disposable credentials
+        run: |
+          DB_SA_PASSWORD="Aa1!$(openssl rand -hex 12)"
+          INITIAL_ADMIN_PASSWORD="Zq9*$(openssl rand -hex 12)"
+          echo "::add-mask::${DB_SA_PASSWORD}"
+          echo "::add-mask::${INITIAL_ADMIN_PASSWORD}"
+          {
+            echo "DB_SA_PASSWORD=${DB_SA_PASSWORD}"
+            echo "INITIAL_ADMIN_PASSWORD=${INITIAL_ADMIN_PASSWORD}"
+          } >> "$GITHUB_ENV"
+
+      - name: Validate Compose configuration
+        run: docker compose config --quiet
+
+      - name: Build and run the stack (db + migrator + web)
+        run: docker compose up --build --detach
+
+      - name: Wait for SQL Server healthcheck (healthy)
+        run: |
+          deadline=$((SECONDS + 300))
+          until [ "$(docker inspect --format '{{.State.Health.Status}}' "$(docker compose ps --quiet db)")" = "healthy" ]; do
+            if [ "$SECONDS" -gt "$deadline" ]; then
+              echo "::error::SQL Server did not become healthy within 300s."
+              exit 1
+            fi
+            sleep 5
+          done
+          echo "db: healthy"
+
+      - name: Wait for migrator to exit with code 0
+        run: |
+          deadline=$((SECONDS + 300))
+          while :; do
+            id="$(docker compose ps --all --quiet migrator)"
+            if [ -n "$id" ]; then
+              status="$(docker inspect --format '{{.State.Status}}' "$id")"
+              if [ "$status" = "exited" ]; then
+                code="$(docker inspect --format '{{.State.ExitCode}}' "$id")"
+                if [ "$code" = "0" ]; then
+                  echo "migrator: exit code 0 (migrations applied)."
+                  break
+                fi
+                echo "::error::migrator exited with code ${code}."
+                docker compose logs --no-log-prefix --tail 120 migrator || true
+                exit 1
+              fi
+            fi
+            if [ "$SECONDS" -gt "$deadline" ]; then
+              echo "::error::migrator did not finish within 300s."
+              docker compose logs --no-log-prefix --tail 120 migrator || true
+              exit 1
+            fi
+            sleep 5
+          done
+
+      - name: Wait for web container to reach running state
+        run: |
+          deadline=$((SECONDS + 120))
+          while :; do
+            id="$(docker compose ps --quiet web)"
+            if [ -n "$id" ]; then
+              status="$(docker inspect --format '{{.State.Status}}' "$id")"
+              if [ "$status" = "running" ]; then
+                echo "web: running"
+                break
+              fi
+              echo "web status: ${status}"
+            fi
+            if [ "$SECONDS" -gt "$deadline" ]; then
+              echo "::error::web did not start within 120s after the migrator completed."
+              exit 1
+            fi
+            sleep 3
+          done
+
+      - name: HTTP readiness (landing page 200, then login page identity marker)
+        run: |
+          deadline=$((SECONDS + 180))
+          while :; do
+            code="$(curl -sS -o /tmp/ci01b-landing.html -w '%{http_code}' --max-time 10 http://127.0.0.1:8080/ || true)"
+            if [ "$code" = "200" ]; then
+              echo "web: HTTP 200 on 127.0.0.1:8080 (landing page)."
+              break
+            fi
+            if [ "$SECONDS" -gt "$deadline" ]; then
+              echo "::error::landing page did not return HTTP 200 within 180s (last status: ${code})."
+              exit 1
+            fi
+            sleep 3
+          done
+          loginbody="$(curl -fsS --max-time 10 http://127.0.0.1:8080/Account/Login || true)"
+          printf '%s' "$loginbody" | grep -q "RequestVerificationToken" \
+            || { echo "::error::login page did not render an antiforgery token; response is not from the expected application."; exit 1; }
+          echo "web: /Account/Login returned 200 with an antiforgery token."
+
+      - name: Confirm non-root execution and writable private volumes
+        run: |
+          webid="$(docker compose ps --quiet web)"
+          uid="$(docker exec "$webid" id -u)"
+          gid="$(docker exec "$webid" id -g)"
+          echo "web container user: ${uid}:${gid}"
+          if [ "$uid" != "1000" ]; then echo "::error::web container does not run as UID 1000 (got ${uid})."; exit 1; fi
+          if [ "$gid" != "1000" ]; then echo "::error::web container does not run with GID 1000 (got ${gid})."; exit 1; fi
+          docker exec "$webid" sh -c 'stat -c "%u %g" /app/App_Data /app/App_Data/Keys /app/App_Data/Documents' | awk '{ if ($0 != "1000 1000") { print "owner mismatch:", $0; exit 1 } }'
+          docker exec "$webid" sh -c 'touch /app/App_Data/Keys/.ci01b-probe && rm /app/App_Data/Keys/.ci01b-probe && touch /app/App_Data/Documents/.ci01b-probe && rm /app/App_Data/Documents/.ci01b-probe' \
+            || { echo "::error::App_Data/Keys or App_Data/Documents is not writable by the application user."; exit 1; }
+          echo "UID/GID 1000 confirmed; App_Data/Keys and App_Data/Documents exist and are writable."
+
+      - name: Confirm migrations and seed data in the disposable database (read-only queries)
+        run: |
+          dbid="$(docker compose ps --quiet db)"
+          runsql() {
+            docker exec -e CI01B_SQL="$1" "$dbid" sh -c '/opt/mssql-tools18/bin/sqlcmd -b -C -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -h -1 -W -Q "$CI01B_SQL"' | tr -d '[:space:]'
+          }
+          tables="$(runsql "SET NOCOUNT ON; SELECT COUNT(*) FROM sys.tables WHERE name IN (AuditLogs, Clients, PreviousLoans, Sections, Questions, ScreeningSessions, ScreeningAnswers, LoanCalculations, PaymentSchedules, InterestRates, ScreeningDocuments)")"
+          migrations="$(runsql "SET NOCOUNT ON; SELECT COUNT(*) FROM LoansDB.dbo.__EFMigrationsHistory")"
+          sections="$(runsql "SET NOCOUNT ON; SELECT COUNT(*) FROM LoansDB.dbo.Sections")"
+          echo "app tables found: ${tables}"
+          echo "migration records: ${migrations}"
+          echo "seeded sections:   ${sections}"
+          if [ "$tables" != "11" ]; then echo "::error::expected all 11 application tables, found ${tables}."; exit 1; fi
+          if ! [[ "$migrations" =~ ^[0-9]+$ ]]; then echo "::error::unexpected response counting migrations: '${migrations}' (is sqlcmd available in the db container? see diagnostics)."; exit 1; fi
+          if [ "$migrations" -lt 1 ]; then echo "::error::no applied migrations found in __EFMigrationsHistory."; exit 1; fi
+          if [ "$sections" != "5" ]; then echo "::error::expected 5 seeded sections, found ${sections}."; exit 1; fi
+          echo "Migrations applied and seed data present in the disposable database."
+
+      - name: Short soak to catch late startup crashes
+        run: |
+          webid="$(docker compose ps --quiet web)"
+          for i in 1 2 3; do
+            code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 10 http://127.0.0.1:8080/ || true)"
+            if [ "$code" != "200" ]; then echo "::error::landing page returned ${code} during soak."; exit 1; fi
+            sleep 5
+          done
+          if [ "$(docker inspect --format '{{.State.Status}}' "$webid")" != "running" ]; then echo "::error::web container is no longer running."; exit 1; fi
+          if [ "$(docker inspect --format '{{.RestartCount}}' "$webid")" != "0" ]; then echo "::error::web container restarted during startup checks."; exit 1; fi
+          if [ "$(docker inspect --format '{{.State.Health.Status}}' "$(docker compose ps --quiet db)")" != "healthy" ]; then echo "::error::db lost its healthy state."; exit 1; fi
+          echo "web stayed running with 0 restarts; db stayed healthy."
+
+      - name: Bounded diagnostics on failure
+        if: failure()
+        run: |
+          docker compose ps --all || true
+          for service in db migrator web; do
+            echo "---- ${service}: last 120 log lines ----"
+            docker compose logs --no-log-prefix --tail 120 "${service}" || true
+          done
+
+      # Cleanup runs even after failures and only targets this job's uniquely
+      # named Compose project. --volumes is safe here: the db-data and
+      # private-data volumes were created by (and named after) this disposable
+      # run and hold nothing but synthetic/bootstrap data.
+      - name: Remove disposable Compose project (containers, network, volumes)
+        if: always()
+        run: |
+          if [ -z "${DB_SA_PASSWORD:-}" ]; then export DB_SA_PASSWORD="TeardownOnlyPlaceHolder"; fi
+          if [ -z "${INITIAL_ADMIN_PASSWORD:-}" ]; then export INITIAL_ADMIN_PASSWORD="TeardownOnlyPlaceHolder"; fi
+          docker compose down --volumes --remove-orphans --timeout 30 || true
