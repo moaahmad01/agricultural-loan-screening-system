@@ -9,7 +9,7 @@ COPY AgriculturalLoanSystem/Views ./Views
 COPY AgriculturalLoanSystem/wwwroot ./wwwroot
 RUN npm run build:css
 
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0.402 AS build
 WORKDIR /src
 COPY AgriculturalLoanSystem/AgriculturalLoanSystem.csproj AgriculturalLoanSystem/packages.lock.json ./
 RUN dotnet restore AgriculturalLoanSystem.csproj --locked-mode
@@ -19,13 +19,15 @@ RUN dotnet publish AgriculturalLoanSystem.csproj -c Release -o /app/publish --no
 
 # Explicit, one-shot database migration step.
 FROM build AS migrator
-RUN dotnet tool install --global dotnet-ef --version 9.0.12
+RUN dotnet tool install --global dotnet-ef --version 10.0.13
 ENV PATH="$PATH:/root/.dotnet/tools"
 ENTRYPOINT ["dotnet", "ef", "database", "update", "--configuration", "Release", "--no-build"]
 
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0.13 AS final
 WORKDIR /app
-RUN adduser --disabled-password --gecos "" appuser \
+# Preserve UID/GID 1000 for private-data volumes created by the .NET 9 image.
+RUN usermod --login appuser --groups "" ubuntu \
+    && groupmod --new-name appuser ubuntu \
     && mkdir -p /app/App_Data/Documents /app/App_Data/Keys \
     && chown -R appuser:appuser /app/App_Data
 COPY --from=build /app/publish .

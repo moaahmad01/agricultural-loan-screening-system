@@ -22,6 +22,6 @@ This is not a security certification. Upload signatures are not malware scanning
 
 Before public hosting, configure TLS, Secure cookies, trusted proxies, AllowedHosts, least-privilege database access, encrypted backups and keys, account recovery, and operational monitoring. The current CSP allows inline content. No MFA or verified invitation flow for staff-created clients is implemented.
 
-Seven npm build-tool advisories remain (two moderate, five high); the production-only npm audit reported none. Do not treat this as zero dependency risk. .NET 9 support ends November 10, 2026; upgrade and validate before operating beyond support.
+Seven npm build-tool advisories remain (two moderate, five high); the production-only npm audit reported none. Do not treat this as zero dependency risk. .NET 10 LTS is used; keep the SDK, runtime, and EF Core/Identity packages on supported servicing releases.
 
 No private vulnerability-reporting address has been configured. The owner should establish one before publication. Do not post credentials or personal documents in public issues.
