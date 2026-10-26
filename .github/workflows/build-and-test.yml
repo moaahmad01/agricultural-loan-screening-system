@@ -183,6 +183,15 @@ jobs:
           if [ "$sections" != "5" ]; then echo "::error::expected 5 seeded sections, found ${sections}."; exit 1; fi
           echo "Migrations applied and seed data present in the disposable database."
 
+      # CI-01C1 - standard HTTP smoke tests against the disposable application.
+      # The ephemeral admin password is exported as DEMO_ADMIN_PASSWORD for the
+      # child process only; it is never placed on the command line or printed.
+      # A failed check exits non-zero, which fails this job before the soak.
+      - name: HTTP smoke tests against the disposable application
+        run: |
+          export DEMO_ADMIN_PASSWORD="${INITIAL_ADMIN_PASSWORD:?INITIAL_ADMIN_PASSWORD is required for staff smoke checks}"
+          python3 scripts/smoke_test.py --base http://127.0.0.1:8080 --allow-synthetic-data
+
       - name: Short soak to catch late startup crashes
         run: |
           webid="$(docker compose ps --quiet web)"
