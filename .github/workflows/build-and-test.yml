@@ -192,6 +192,13 @@ jobs:
           export DEMO_ADMIN_PASSWORD="${INITIAL_ADMIN_PASSWORD:?INITIAL_ADMIN_PASSWORD is required for staff smoke checks}"
           python3 scripts/smoke_test.py --base http://127.0.0.1:8080 --allow-synthetic-data
 
+      # CI-01C2 - run after standard smoke; SEC-01 adds questionnaire records.
+      # Export the masked disposable admin credential again for this step.
+      - name: SEC-01 HTTP security tests against the disposable application
+        run: |
+          export DEMO_ADMIN_PASSWORD="${INITIAL_ADMIN_PASSWORD:?INITIAL_ADMIN_PASSWORD is required for SEC-01 security checks}"
+          python3 scripts/sec01_http_test.py --base http://127.0.0.1:8080 --allow-synthetic-data
+
       - name: Short soak to catch late startup crashes
         run: |
           webid="$(docker compose ps --quiet web)"
