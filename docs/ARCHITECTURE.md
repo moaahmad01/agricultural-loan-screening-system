@@ -41,7 +41,29 @@ For each answered section, Yes points divided by possible points are multiplied 
 
 Finalization requires all active questions. Completed, abandoned, or loan-linked screenings reject further answer changes; document mutations are also rejected. Linked screenings cannot be deleted. This is application-level protection, not a proof against every concurrent operation. Questionnaire definitions remain mutable: historical reports can display later edits. Snapshot/versioning and SQL-backed race tests remain future work.
 
-Simple interest uses principal × annual rate × years; reducing interest uses amortized installments. Payment count is the ceiling of years × payments per year. Weekly/biweekly dates advance 7/14 days; other frequencies use calendar months. Monetary outputs retain the original two-decimal rounding. Rate-table gaps fall back to 9%; the JavaScript estimate has separate thresholds and may differ. `Murabaha` exists in the enum but has no distinct finance implementation and is not advertised as supported.
+### Loan calculation and validation
+
+Supported calculations are simple interest (principal × annual rate × years) and reducing-balance amortization, including the zero-rate case. `Murabaha` exists in the enum but has no distinct finance implementation and is not advertised as supported.
+
+MVC validates principal using decimal comparisons against **1–10,000,000 JOD, inclusive**, plus a precision rule: the value must equal its two-decimal rounding. This rejects meaningful fractional digits beyond two places rather than silently accepting a rounded principal. Numerically equivalent trailing zeros are allowed (`1000.000` is valid precision; `1000.001` is not). See [LoanInputModel](../AgriculturalLoanSystem/Services/Models/LoanCalculationDtos.cs) and [LoanPrincipalPrecision](../AgriculturalLoanSystem/Services/Models/LoanPrincipalPrecision.cs).
+
+For application submission, `LoansController` selects the rate from the server's configured bands and replaces the submitted rate before calculating and saving. Rate-table gaps fall back to 9%; the browser estimate has separate thresholds and can differ. Saved applications retain the authoritative rate used at creation.
+
+Payment count is the ceiling of years × payments per year. Supported frequencies are weekly, biweekly, monthly, every two months, quarterly, semiannual, and annual. Weekly/biweekly dates advance 7/14 days; other frequencies use calendar months.
+
+### Repayment reconciliation
+
+`LoanCalculationService` uses two-decimal amounts with **`MidpointRounding.ToEven`** (banker's rounding). The nominal installment is rounded from the formula. Reducing-balance period interest is calculated from the rounded outstanding balance; simple-interest period interest is allocated from the formula's total.
+
+Each row's payment equals principal paid plus interest paid. Principal allocation is bounded between zero and the remaining balance; the final row pays the remaining principal. For simple interest, the final interest allocation reconciles to the rounded total-interest target. If earlier rounded allocations exceed that target, interest is reduced from earlier rows in reverse order, with their payments adjusted accordingly. The resulting schedule's interest and payment sums provide the summary totals; the nominal installment can differ from an adjusted row.
+
+`LoansService` saves the rate, amounts, and generated schedule together as a new application. Reading a saved application loads those persisted rows; existing historical schedules are **not automatically recalculated or rewritten** by the current calculation code.
+
+### Financial limitations
+
+- Very small principal over long durations can produce zero-valued ordinary installments and a larger final payment. Regression tests cover cases such as 1 JOD at zero interest over 600 monthly payments; reconciliation is not a guarantee of a commercially suitable repayment policy.
+- MVC model validation and internal service boundaries differ. `LoansService` defensively checks principal precision and client/session linkage, but direct service calls do not automatically run all MVC range/enum validation. `CalculateLoan` also accepts its supplied rate; server-authoritative rate selection occurs in the controller submission path.
+- The browser preview is an estimate, not the saved schedule or an authoritative rate quote. Domain review of rate-band gaps, extreme repayment cases, and screening policy remains separate from arithmetic regression coverage.
 
 ## Operational boundaries
 

@@ -1,10 +1,56 @@
-# Portfolio verification — October 22, 2026
+# Portfolio verification
 
-The October 22 results below are historical. The local .NET 10 candidate's verification is recorded separately at the end of this document.
+## Current status
+
+Documentation status date: **October 27, 2026**. Verified application/workflow baseline:
+
+- Tested main baseline SHA: `58e3a9c539f7d400905560a0831c095b624a30e1`.
+- Successful main push run: [40380933455](https://github.com/moaahmad01/agricultural-loan-screening-system/actions/runs/40380933455), October 26, 2026 (UTC).
+- ASP.NET Core MVC/Razor on .NET 10; SDK 10.0.402; EF Core/Identity 10.0.13; SQL Server; Tailwind CSS 3.4.19; Node.js 24.
+
+| Verified check | Result in the referenced run |
+| --- | --- |
+| .NET automated tests | 161 passed; zero failed/skipped |
+| Standard HTTP smoke | 40 PASS: 32 citizen/anonymous + 8 admin/staff |
+| SEC-01 HTTP security | 42 PASS: seed 1, anonymous/citizen access 4, Admin 18, Employee 18, final preservation 1 |
+| Locked restore, npm install, CSS build | Passed |
+| Release build | Zero warnings and zero errors |
+| EF model consistency and Compose configuration | Passed |
+| Docker application/migrator image builds | Passed |
+| SQL Server and migrator | Healthy; migrator exit code 0 |
+| Database observations before HTTP suites | 11 application tables, 5 applied migrations, 5 seeded sections |
+| HTTP readiness and login antiforgery | Passed |
+| Runtime identity and private storage | UID/GID 1000:1000; document/key-directory write checks passed |
+| Stability soak after both HTTP suites | Web stayed running with zero restarts; SQL stayed healthy |
+| Disposable cleanup | Three containers, two named volumes, and the network removed |
+| Artifact upload | TRX test-results artifact uploaded successfully |
+| Node.js 24-based actions | checkout v5 in both jobs; setup-dotnet v5; setup-node v5; upload-artifact v6 passed on runner 2.338.0 |
+| Node.js 20 action-runtime notices | None observed |
+| npm installation audit output | Zero vulnerabilities reported at the time of this run |
+
+These are **243 checks across three distinct suites**, not 243 .NET unit tests. The database migration assertion currently requires **at least one** applied migration; this run observed five. The cleanup command tolerates teardown errors; actual removal succeeded in this run. Neither behavior is an unconditional guarantee for another run or installation.
+
+Remaining notices were Browserslist data age (`caniuse-lite`) and JavaScript `punycode`/`url.parse()` deprecations. They are separate from compiler warnings and vulnerability-advisory counts. No dependency scan result guarantees future security.
+
+### Current limitations
+
+This is a source-code portfolio and screening aid, without a verified public demo URL, production deployment validation, external penetration testing/certification, load testing, or exhaustive business-rule coverage. Domain policy, questionnaire versioning, small-principal/long-duration repayment suitability, and the browser/server preview difference remain limitations. Saved schedules are not automatically rewritten. See [financial behavior](docs/ARCHITECTURE.md#financial-limitations).
+
+Keys/documents are persistent but key encryption at rest, production TLS/reverse-proxy configuration, least-privilege SQL access, backups, malware scanning, quotas/retention, account recovery, and comprehensive SQL concurrency/browser coverage still need operational work. Documentation corrections do not implement those capabilities. See [security](docs/SECURITY.md#remaining-limitations) and [setup](docs/SETUP.md#deployment-prerequisites).
+
+The historical snapshots below are retained as originally recorded evidence, not independently rerun during this documentation update. The evidence above applies to the cited tested baseline; documentation changes do not establish additional runtime verification.
+
+## CV project entry
+
+**Agricultural Loan Screening System — C#, ASP.NET Core MVC, .NET 10, EF Core, SQL Server**
+
+Developed a bilingual agricultural loan screening system using ASP.NET Core MVC, SQL Server, EF Core, and Identity, with role-based access, ownership-authorized private documents, weighted questionnaires, and financial repayment scheduling. Added validation and regression coverage verified by 161 .NET automated tests, 40 standard HTTP checks, and 42 security HTTP checks in disposable Docker/SQL CI.
+
+## Historical publication snapshot: October 22, 2026
 
 The owner confirmed the required rights to publish the project materials on October 22, 2026. No application license has been assigned. This is a source-code portfolio, not a production deployment or security certification.
 
-## Publication review
+### Publication review — historical
 
 - Git was already initialized on `main`, with no commits or remote at the start of publication preparation.
 - The source, tests, migrations, lockfiles, build configuration, documentation, third-party notices, and five application screenshots were reviewed for inclusion.
@@ -13,7 +59,7 @@ The owner confirmed the required rights to publish the project materials on Octo
 - Ignore rules exclude environment files, local tools/reports, private uploads, App_Data, database files/exports, certificates/keys, archives, dependency caches, test output, and .NET build/publish output. Served frontend assets and upstream notices are intentionally included.
 - An unrelated terminal-help capture was moved to ignored local storage. First-party trailing whitespace was cleaned; upstream vendor content is preserved.
 
-## Current local verification
+### Local verification — historical October 22 snapshot
 
 | Check | Result |
 | --- | --- |
@@ -28,11 +74,11 @@ The owner confirmed the required rights to publish the project materials on Octo
 
 The downloaded EF tool manifest initially carried a Windows downloaded-file block; unblocking the inspected manifest allowed tool restore and the snapshot check to pass. Local .NET validation used `MSBuildEnableWorkloadResolver=false` for this machine's SDK setup. Neither workaround is required in the Ubuntu GitHub Actions workflow.
 
-## Earlier verification retained as historical evidence
+### Earlier verification — historical October 21 snapshot
 
 The October 21 preparation recorded 40 local HTTP smoke checks using a synthetic SQL Server database, fresh migration application, a simulated repaired-database upgrade, and SQL uniqueness/index checks. These database/HTTP scenarios were not rerun during publication. See [setup](docs/SETUP.md), [architecture](docs/ARCHITECTURE.md), and [focused audit](docs/AUDIT.md) for behavior and limitations.
 
-## Remaining limitations
+### Limitations recorded on October 22 — historical
 
 - Seven npm build-tool advisories remain: two moderate and five high. The production-only audit found none. Browserslist data also reports that it is outdated.
 - .NET 9 support ends November 10, 2026; plan a tested framework upgrade before ongoing deployment beyond support.
@@ -41,17 +87,11 @@ The October 21 preparation recorded 40 local HTTP smoke checks using a synthetic
 - Domain-policy review, historical questionnaire versioning, financial rounding/rate-band review, malware scanning, storage quotas/retention, and account recovery remain incomplete.
 - Legacy public documents and historical audit data require the offline procedure in [security](docs/SECURITY.md). No real customer data should be used in demonstrations.
 
-## GitHub verification
+### GitHub verification description — historical October 22 snapshot
 
 The workflow in `.github/workflows/build-and-test.yml` restores locked dependencies, builds frontend assets and the Release solution, runs tests, checks EF model consistency, and validates Compose configuration. The authenticated account is `moaahmad01`; the intended public repository is [agricultural-loan-screening-system](https://github.com/moaahmad01/agricultural-loan-screening-system). The [Actions page](https://github.com/moaahmad01/agricultural-loan-screening-system/actions/workflows/build-and-test.yml) and README badge provide the hosted verification result. A local successful build alone does not establish a successful hosted run.
 
-## CV project entry
-
-**Agricultural Loan Screening System — C#, ASP.NET Core MVC, EF Core, SQL Server**
-
-Developed a bilingual Arabic/English loan-screening application with weighted questionnaires, repayment schedules, and role-based administration. Implemented ownership-authorized private documents, workflow validation, and database constraints; includes 64 automated tests, reproducible setup, Docker configuration, and GitHub Actions.
-
-## PLAT-01 local verification — October 24, 2026
+## Historical PLAT-01 local verification — October 24, 2026
 
 Candidate based on approved SEC-01 commit `64c3967`; pending independent review, with no commit, push, or hosted CI run during this phase.
 
